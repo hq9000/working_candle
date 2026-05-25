@@ -6,6 +6,7 @@ namespace WorkingCandle;
 public class TimerController
 {
     private const int TIMER_DURATION_SECONDS = 3600;
+    private const int PROGRESS_DIVISOR = TIMER_DURATION_SECONDS / 100; // 36 seconds per 1% progress
     
     private readonly System.Windows.Forms.Timer _uiTimer;
     private DateTime _startTime;
@@ -120,17 +121,10 @@ public class TimerController
         }
         
         // Calculate progress percentage (0-100)
-        int progress = (int)(elapsed.TotalSeconds / 36); // 3600 / 36 = 100
+        int progress = (int)(elapsed.TotalSeconds / PROGRESS_DIVISOR);
         
         // Ensure progress is within bounds
-        if (progress > 100)
-        {
-            progress = 100;
-        }
-        else if (progress < 0)
-        {
-            progress = 0;
-        }
+        progress = Math.Clamp(progress, 0, 100);
         
         // Fire TimerTick event with time and progress data
         TimerTick?.Invoke(this, new TimerTickEventArgs(secondsRemaining, progress));
