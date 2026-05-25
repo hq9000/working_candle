@@ -67,8 +67,10 @@ public partial class MainForm : Form
 
     private void OnTimerCompleted(object? sender, EventArgs e)
     {
-        // Timer completed event handling
-        // Will play sound in Phase 5
+        // Play completion sound
+        _notificationService.PlayCompletionSound();
+        
+        // Transition to STOPPED state
         _stateManager.TransitionTo(StateManager.State.Stopped);
     }
     
