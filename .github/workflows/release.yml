@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Extract version from tag
+      id: version
+      shell: pwsh
+      run: |
+        $tag = "${{ github.ref_name }}"
+        $version = $tag -replace '^v', ''
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "Version: $version"
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build solution
+      run: |
+        dotnet build --configuration Release --no-restore /p:Version=${{ steps.version.outputs.VERSION }} /p:AssemblyVersion=${{ steps.version.outputs.VERSION }}.0 /p:FileVersion=${{ steps.version.outputs.VERSION }}.0 /p:InformationalVersion=${{ steps.version.outputs.VERSION }}
+    
+    - name: Publish single-file executable
+      run: |
+        dotnet publish WorkingCandle/WorkingCandle.csproj --configuration Release --no-build --output ./publish
+    
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./publish/WorkingCandle.exe
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+        name: Working Candle v${{ steps.version.outputs.VERSION }}
+        body: |
+          ## Working Candle Focus Timer v${{ steps.version.outputs.VERSION }}
+          
+          ### Features
+          - Simple 1-hour focus timer
+          - Clean, distraction-free interface
+          - Pause/resume functionality
+          - Audio notification on completion
+          
+          ### System Requirements
+          - Windows 10 or later (64-bit)
+          - .NET 8.0 Runtime (Windows)
+          
+          ### Installation
+          1. Download `WorkingCandle.exe` from the assets below
+          2. Run the executable (no installation required)
+          3. If prompted, install the .NET 8.0 Runtime
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
