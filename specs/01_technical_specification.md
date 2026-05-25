@@ -335,7 +335,7 @@ WorkingCandle/
 ### 10.1 Build Pipeline
 
 #### 10.1.1 Trigger Events
-- Push to `main` branch
+- Push to `master` branch
 - Creation of version tags (e.g., `v1.0.0`)
 - Manual trigger
 
@@ -357,7 +357,7 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     tags: [ 'v*' ]
 
 jobs:
