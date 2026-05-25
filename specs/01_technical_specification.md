@@ -135,7 +135,8 @@ Working Candle is a minimalist Windows desktop application designed to help user
 
 #### 5.2.2 Time Display
 - **Type**: `Label` control
-- **Format**: "MM:SS" (e.g., "45:30")
+- **Format**: "MM:SS" (e.g., "45:30" for 45 minutes 30 seconds remaining)
+- **Display Mode**: Countdown (shows remaining time, not elapsed)
 - **Font**: Segoe UI, 36pt, Bold
 - **Position**: Below progress bar, centered
 - **Color**: System foreground color
@@ -198,7 +199,12 @@ void OnTimerTick()
     int secondsRemaining = 3600 - (int)elapsed.TotalSeconds;
     int progress = (int)(elapsed.TotalSeconds / 36); // 0-100
     
-    UpdateUI(secondsRemaining, progress);
+    // Display remaining time in MM:SS format (countdown)
+    int minutesRemaining = secondsRemaining / 60;
+    int secondsRemainingDisplay = secondsRemaining % 60;
+    string timeDisplay = $"{minutesRemaining:D2}:{secondsRemainingDisplay:D2}";
+    
+    UpdateUI(timeDisplay, progress);
     
     if (secondsRemaining <= 0)
     {
@@ -482,8 +488,8 @@ jobs:
 ### 15.1 Functional Requirements
 - ✓ Application starts in STOPPED state
 - ✓ Start button initiates 1-hour timer
-- ✓ Progress bar accurately reflects elapsed time
-- ✓ Time display shows remaining time (countdown)
+- ✓ Progress bar accurately reflects elapsed time (0% to 100%)
+- ✓ Time display shows remaining time in countdown format (60:00 → 00:00)
 - ✓ Pause button pauses timer without losing progress
 - ✓ Resume button continues from paused state
 - ✓ Stop button resets timer to initial state
