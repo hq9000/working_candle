@@ -104,6 +104,7 @@ partial class MainForm
         // 
         // _stopButton
         // 
+        // Position: Resume x (40) + Resume width (150) + gap (20) = 210
         _stopButton.Location = new Point(210, 210);
         _stopButton.Name = "_stopButton";
         _stopButton.Size = new Size(150, 45);
