@@ -91,7 +91,7 @@ partial class MainForm
         // 
         // _resumeButton
         // 
-        _resumeButton.Location = new Point(50, 210);
+        _resumeButton.Location = new Point(40, 210);
         _resumeButton.Name = "_resumeButton";
         _resumeButton.Size = new Size(150, 45);
         _resumeButton.TabIndex = 4;

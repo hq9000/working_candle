@@ -5,6 +5,8 @@ public partial class MainForm : Form
     private readonly StateManager _stateManager;
     private readonly TimerController _timerController;
     private readonly NotificationService _notificationService;
+    
+    private const string INITIAL_TIME_DISPLAY = "60:00";
 
     public MainForm()
     {
@@ -90,7 +92,7 @@ public partial class MainForm : Form
                 _stopButton.Visible = false;
                 
                 // Reset time display
-                _timeLabel.Text = "60:00";
+                _timeLabel.Text = INITIAL_TIME_DISPLAY;
                 _progressBar.Value = 0;
                 break;
                 
