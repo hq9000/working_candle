@@ -49,6 +49,7 @@ partial class MainForm
         _startButton.TabIndex = 0;
         _startButton.Text = "Start 1h Timer";
         _startButton.UseVisualStyleBackColor = true;
+        _startButton.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
         _startButton.Click += StartButton_Click;
         
         // 
@@ -59,6 +60,7 @@ partial class MainForm
         _progressBar.Size = new Size(350, 50);
         _progressBar.TabIndex = 1;
         _progressBar.Visible = false;
+        _progressBar.Style = ProgressBarStyle.Continuous;
         
         // 
         // _timeLabel
@@ -82,6 +84,7 @@ partial class MainForm
         _pauseButton.TabIndex = 3;
         _pauseButton.Text = "Pause";
         _pauseButton.UseVisualStyleBackColor = true;
+        _pauseButton.Font = new Font("Segoe UI", 10F);
         _pauseButton.Visible = false;
         _pauseButton.Click += PauseButton_Click;
         
@@ -94,6 +97,7 @@ partial class MainForm
         _resumeButton.TabIndex = 4;
         _resumeButton.Text = "Resume";
         _resumeButton.UseVisualStyleBackColor = true;
+        _resumeButton.Font = new Font("Segoe UI", 10F);
         _resumeButton.Visible = false;
         _resumeButton.Click += ResumeButton_Click;
         
@@ -106,6 +110,7 @@ partial class MainForm
         _stopButton.TabIndex = 5;
         _stopButton.Text = "Stop";
         _stopButton.UseVisualStyleBackColor = true;
+        _stopButton.Font = new Font("Segoe UI", 10F);
         _stopButton.Visible = false;
         _stopButton.Click += StopButton_Click;
         
