@@ -27,8 +27,12 @@ jobs:
     - name: Build solution
       run: dotnet build --configuration Release --no-restore
     
+    - name: Publish executable
+      run: |
+        dotnet publish WorkingCandle/WorkingCandle.csproj --configuration Release --no-build --output ./publish
+    
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: WorkingCandle
-        path: WorkingCandle/bin/Release/**/*.exe
+        path: ./publish/WorkingCandle.exe
