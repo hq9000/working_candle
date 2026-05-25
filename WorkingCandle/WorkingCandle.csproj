@@ -13,6 +13,8 @@
     
     <!-- Release configuration -->
     <PublishSingleFile>true</PublishSingleFile>
+    <!-- RuntimeIdentifier is intentionally hardcoded to win-x64 per technical specification.
+         This application is designed exclusively for Windows x64 platform. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>

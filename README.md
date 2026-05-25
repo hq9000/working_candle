@@ -127,7 +127,7 @@ The application follows a simple, event-driven architecture:
 
 The application uses the following testing approach:
 
-- **Manual Testing**: Full test checklist for each release (see `specs/02_implementation_plan.md`)
+- **Manual Testing**: Full test checklist for each release (see `specs/03_test_checklist_v1.0.0.md`)
 - **CI/CD Validation**: Automated builds on every push to master
 - **Release Testing**: Comprehensive QA before each release
 
