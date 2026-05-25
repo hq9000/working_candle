@@ -132,6 +132,20 @@ partial class MainForm
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Working Candle";
         
+        // Load icon from file
+        try
+        {
+            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
+            if (File.Exists(iconPath))
+            {
+                Icon = new Icon(iconPath);
+            }
+        }
+        catch
+        {
+            // Silently ignore if icon cannot be loaded
+        }
+        
         ResumeLayout(false);
     }
 
