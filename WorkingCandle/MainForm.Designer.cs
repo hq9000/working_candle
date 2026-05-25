@@ -29,13 +29,118 @@ partial class MainForm
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+        
+        // Initialize UI controls
+        _startButton = new Button();
+        _progressBar = new ProgressBar();
+        _timeLabel = new Label();
+        _pauseButton = new Button();
+        _resumeButton = new Button();
+        _stopButton = new Button();
+        
+        SuspendLayout();
+        
+        // 
+        // _startButton
+        // 
+        _startButton.Location = new Point(100, 120);
+        _startButton.Name = "_startButton";
+        _startButton.Size = new Size(200, 60);
+        _startButton.TabIndex = 0;
+        _startButton.Text = "Start 1h Timer";
+        _startButton.UseVisualStyleBackColor = true;
+        _startButton.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+        _startButton.Click += StartButton_Click;
+        
+        // 
+        // _progressBar
+        // 
+        _progressBar.Location = new Point(25, 50);
+        _progressBar.Name = "_progressBar";
+        _progressBar.Size = new Size(350, 50);
+        _progressBar.TabIndex = 1;
+        _progressBar.Visible = false;
+        _progressBar.Style = ProgressBarStyle.Continuous;
+        
+        // 
+        // _timeLabel
+        // 
+        _timeLabel.AutoSize = false;
+        _timeLabel.Font = new Font("Segoe UI", 36F, FontStyle.Bold);
+        _timeLabel.Location = new Point(100, 110);
+        _timeLabel.Name = "_timeLabel";
+        _timeLabel.Size = new Size(200, 60);
+        _timeLabel.TabIndex = 2;
+        _timeLabel.Text = "60:00";
+        _timeLabel.TextAlign = ContentAlignment.MiddleCenter;
+        _timeLabel.Visible = false;
+        
+        // 
+        // _pauseButton
+        // 
+        _pauseButton.Location = new Point(125, 210);
+        _pauseButton.Name = "_pauseButton";
+        _pauseButton.Size = new Size(150, 45);
+        _pauseButton.TabIndex = 3;
+        _pauseButton.Text = "Pause";
+        _pauseButton.UseVisualStyleBackColor = true;
+        _pauseButton.Font = new Font("Segoe UI", 10F);
+        _pauseButton.Visible = false;
+        _pauseButton.Click += PauseButton_Click;
+        
+        // 
+        // _resumeButton
+        // 
+        _resumeButton.Location = new Point(40, 210);
+        _resumeButton.Name = "_resumeButton";
+        _resumeButton.Size = new Size(150, 45);
+        _resumeButton.TabIndex = 4;
+        _resumeButton.Text = "Resume";
+        _resumeButton.UseVisualStyleBackColor = true;
+        _resumeButton.Font = new Font("Segoe UI", 10F);
+        _resumeButton.Visible = false;
+        _resumeButton.Click += ResumeButton_Click;
+        
+        // 
+        // _stopButton
+        // 
+        // Position: Resume x (40) + Resume width (150) + gap (20) = 210
+        _stopButton.Location = new Point(210, 210);
+        _stopButton.Name = "_stopButton";
+        _stopButton.Size = new Size(150, 45);
+        _stopButton.TabIndex = 5;
+        _stopButton.Text = "Stop";
+        _stopButton.UseVisualStyleBackColor = true;
+        _stopButton.Font = new Font("Segoe UI", 10F);
+        _stopButton.Visible = false;
+        _stopButton.Click += StopButton_Click;
+        
+        // 
+        // MainForm
+        // 
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(400, 300);
+        Controls.Add(_startButton);
+        Controls.Add(_progressBar);
+        Controls.Add(_timeLabel);
+        Controls.Add(_pauseButton);
+        Controls.Add(_resumeButton);
+        Controls.Add(_stopButton);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
+        Name = "MainForm";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Working Candle";
+        
+        ResumeLayout(false);
     }
 
     #endregion
+    
+    private Button _startButton;
+    private ProgressBar _progressBar;
+    private Label _timeLabel;
+    private Button _pauseButton;
+    private Button _resumeButton;
+    private Button _stopButton;
 }

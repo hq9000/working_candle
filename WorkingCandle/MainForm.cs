@@ -5,6 +5,8 @@ public partial class MainForm : Form
     private readonly StateManager _stateManager;
     private readonly TimerController _timerController;
     private readonly NotificationService _notificationService;
+    
+    private const string INITIAL_TIME_DISPLAY = "60:00";
 
     public MainForm()
     {
@@ -29,7 +31,7 @@ public partial class MainForm : Form
 
     private void OnStateChanged(object? sender, StateManager.State newState)
     {
-        // UI updates will be implemented in Phase 4
+        UpdateUIForState(newState);
     }
 
     private void OnTimerStarted(object? sender, EventArgs e)
@@ -54,12 +56,119 @@ public partial class MainForm : Form
 
     private void OnTimerTick(object? sender, TimerTickEventArgs e)
     {
-        // Timer tick event handling - will update UI in Phase 4
+        // Update time display in MM:SS countdown format
+        int minutes = e.SecondsRemaining / 60;
+        int seconds = e.SecondsRemaining % 60;
+        _timeLabel.Text = $"{minutes:D2}:{seconds:D2}";
+        
+        // Update progress bar value
+        _progressBar.Value = e.ProgressPercent;
     }
 
     private void OnTimerCompleted(object? sender, EventArgs e)
     {
         // Timer completed event handling
         // Will play sound in Phase 5
+        _stateManager.TransitionTo(StateManager.State.Stopped);
+    }
+    
+    /// <summary>
+    /// Updates the UI based on the current state.
+    /// </summary>
+    /// <param name="state">The current state.</param>
+    private void UpdateUIForState(StateManager.State state)
+    {
+        switch (state)
+        {
+            case StateManager.State.Stopped:
+                // Show Start button
+                _startButton.Visible = true;
+                
+                // Hide all other controls
+                _progressBar.Visible = false;
+                _timeLabel.Visible = false;
+                _pauseButton.Visible = false;
+                _resumeButton.Visible = false;
+                _stopButton.Visible = false;
+                
+                // Reset time display
+                _timeLabel.Text = INITIAL_TIME_DISPLAY;
+                _progressBar.Value = 0;
+                break;
+                
+            case StateManager.State.Running:
+                // Hide Start button
+                _startButton.Visible = false;
+                
+                // Show Progress bar, Time display, and Pause button
+                _progressBar.Visible = true;
+                _timeLabel.Visible = true;
+                _pauseButton.Visible = true;
+                
+                // Hide Resume and Stop buttons
+                _resumeButton.Visible = false;
+                _stopButton.Visible = false;
+                break;
+                
+            case StateManager.State.Paused:
+                // Hide Start and Pause buttons
+                _startButton.Visible = false;
+                _pauseButton.Visible = false;
+                
+                // Show Progress bar, Time display, Resume, and Stop buttons
+                _progressBar.Visible = true;
+                _timeLabel.Visible = true;
+                _resumeButton.Visible = true;
+                _stopButton.Visible = true;
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// Handles the Start button click event.
+    /// </summary>
+    private void StartButton_Click(object? sender, EventArgs e)
+    {
+        if (_stateManager.CanTransitionTo(StateManager.State.Running))
+        {
+            _timerController.Start();
+            _stateManager.TransitionTo(StateManager.State.Running);
+        }
+    }
+    
+    /// <summary>
+    /// Handles the Pause button click event.
+    /// </summary>
+    private void PauseButton_Click(object? sender, EventArgs e)
+    {
+        if (_stateManager.CanTransitionTo(StateManager.State.Paused))
+        {
+            _timerController.Pause();
+            _stateManager.TransitionTo(StateManager.State.Paused);
+        }
+    }
+    
+    /// <summary>
+    /// Handles the Resume button click event.
+    /// </summary>
+    private void ResumeButton_Click(object? sender, EventArgs e)
+    {
+        if (_stateManager.CanTransitionTo(StateManager.State.Running))
+        {
+            _timerController.Resume();
+            _stateManager.TransitionTo(StateManager.State.Running);
+        }
+    }
+    
+    /// <summary>
+    /// Handles the Stop button click event.
+    /// </summary>
+    private void StopButton_Click(object? sender, EventArgs e)
+    {
+        if (_stateManager.CanTransitionTo(StateManager.State.Stopped))
+        {
+            _timerController.Stop();
+            _stateManager.TransitionTo(StateManager.State.Stopped);
+        }
     }
 }
