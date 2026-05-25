@@ -13,9 +13,10 @@ partial class MainForm
     /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
-        if (disposing && (components != null))
+        if (disposing)
         {
-            components.Dispose();
+            components?.Dispose();
+            _notificationService?.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -141,9 +142,15 @@ partial class MainForm
                 Icon = new Icon(iconPath);
             }
         }
-        catch
+        catch (IOException ex)
         {
-            // Silently ignore if icon cannot be loaded
+            // Silently ignore if icon file cannot be read
+            System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Silently ignore if we don't have permission to read the icon
+            System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
         }
         
         ResumeLayout(false);
