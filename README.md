@@ -1,4 +1,8 @@
-The only line in this project written by a human is the follwing: this is 100% agentically coded little tool I needed because of my dissatisfaction with current focus/pomodoro etc. timers which are either broken, missing core features, bloated or ads-infested. Took me approximately 2 hours from initial draft to working code, used Claude Sonnet 4.5 and GitHub agents.
+## Human-produced overview
+
+The only line in this project written by a human is the following: 
+
+This is 100% agentically coded little tool I needed because of my dissatisfaction with current focus/pomodoro etc. timers which are either broken, missing core features, bloated or ads-infested. Took me approximately 2 hours from initial draft to working code, used Claude Sonnet 4.5 and GitHub agents.
 
 <img width="412" height="337" alt="image" src="https://github.com/user-attachments/assets/7f35e7fd-8006-45c8-bfc0-2973c8d6315a" />
 <img width="407" height="336" alt="image" src="https://github.com/user-attachments/assets/23842290-9b7b-460d-9d65-299fca734eb3" />
