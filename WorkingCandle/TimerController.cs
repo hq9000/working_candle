@@ -110,6 +110,25 @@ public class TimerController
     /// <param name="seconds">The number of seconds to adjust (can be positive or negative).</param>
     public void AdjustTime(int seconds)
     {
+        // Calculate current elapsed time and remaining time
+        TimeSpan elapsed = DateTime.Now - _startTime - _pausedDuration;
+        int currentSecondsRemaining = TIMER_DURATION_SECONDS - (int)elapsed.TotalSeconds;
+        
+        // Calculate what the new remaining time would be after adjustment
+        int newSecondsRemaining = currentSecondsRemaining + seconds;
+        
+        // Ensure the adjusted remaining time stays within valid bounds (0 to TIMER_DURATION_SECONDS)
+        if (newSecondsRemaining < 0)
+        {
+            // Prevent negative time - set to 0
+            seconds = -currentSecondsRemaining;
+        }
+        else if (newSecondsRemaining > TIMER_DURATION_SECONDS)
+        {
+            // Prevent exceeding max duration
+            seconds = TIMER_DURATION_SECONDS - currentSecondsRemaining;
+        }
+        
         // Adjust the start time to effectively add/subtract time from the remaining time
         // Adding seconds means we started earlier (more time remaining)
         // Subtracting seconds means we started later (less time remaining)
