@@ -12,7 +12,7 @@ public class NotificationService : IDisposable
     private SoundPlayer? _soundPlayer;
     private NotifyIcon? _notifyIcon;
     private bool _disposed = false;
-    private readonly object _disposeLock = new object();
+    private readonly object _syncLock = new object();
     
     private const int BALLOON_TIP_DURATION_MS = 5000;
     private const int TRAY_ICON_CLEANUP_DELAY_MS = 6000; // 1 second longer than balloon tip duration
@@ -98,7 +98,7 @@ public class NotificationService : IDisposable
     /// </summary>
     public void ShowCompletionNotification()
     {
-        lock (_disposeLock)
+        lock (_syncLock)
         {
             if (_disposed)
             {
@@ -118,9 +118,10 @@ public class NotificationService : IDisposable
                     );
                     
                     // Hide after a short delay to clean up the tray
+                    // Note: NotifyIcon.Visible is thread-safe and can be set from any thread
                     Task.Delay(TRAY_ICON_CLEANUP_DELAY_MS).ContinueWith(_ =>
                     {
-                        lock (_disposeLock)
+                        lock (_syncLock)
                         {
                             if (!_disposed && _notifyIcon != null)
                             {
@@ -153,7 +154,7 @@ public class NotificationService : IDisposable
     /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
     protected virtual void Dispose(bool disposing)
     {
-        lock (_disposeLock)
+        lock (_syncLock)
         {
             if (!_disposed)
             {
