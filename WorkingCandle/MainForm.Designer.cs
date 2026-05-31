@@ -119,30 +119,30 @@ partial class MainForm
         _stopButton.Click += StopButton_Click;
         
         // 
-        // _addFiveMinutesButton
+        // _subtractFiveMinutesButton (- button on the left)
         // 
-        _addFiveMinutesButton.Location = new Point(40, 180);
-        _addFiveMinutesButton.Name = "_addFiveMinutesButton";
-        _addFiveMinutesButton.Size = new Size(70, 40);
-        _addFiveMinutesButton.TabIndex = 6;
-        _addFiveMinutesButton.Text = "+5m";
-        _addFiveMinutesButton.UseVisualStyleBackColor = true;
-        _addFiveMinutesButton.Font = new Font("Segoe UI", 9F);
-        _addFiveMinutesButton.Visible = false;
-        _addFiveMinutesButton.Click += AddFiveMinutesButton_Click;
-        
-        // 
-        // _subtractFiveMinutesButton
-        // 
-        _subtractFiveMinutesButton.Location = new Point(120, 180);
+        _subtractFiveMinutesButton.Location = new Point(130, 260);
         _subtractFiveMinutesButton.Name = "_subtractFiveMinutesButton";
-        _subtractFiveMinutesButton.Size = new Size(70, 40);
-        _subtractFiveMinutesButton.TabIndex = 7;
+        _subtractFiveMinutesButton.Size = new Size(70, 35);
+        _subtractFiveMinutesButton.TabIndex = 6;
         _subtractFiveMinutesButton.Text = "-5m";
         _subtractFiveMinutesButton.UseVisualStyleBackColor = true;
         _subtractFiveMinutesButton.Font = new Font("Segoe UI", 9F);
         _subtractFiveMinutesButton.Visible = false;
         _subtractFiveMinutesButton.Click += SubtractFiveMinutesButton_Click;
+        
+        // 
+        // _addFiveMinutesButton (+ button on the right)
+        // 
+        _addFiveMinutesButton.Location = new Point(205, 260);
+        _addFiveMinutesButton.Name = "_addFiveMinutesButton";
+        _addFiveMinutesButton.Size = new Size(70, 35);
+        _addFiveMinutesButton.TabIndex = 7;
+        _addFiveMinutesButton.Text = "+5m";
+        _addFiveMinutesButton.UseVisualStyleBackColor = true;
+        _addFiveMinutesButton.Font = new Font("Segoe UI", 9F);
+        _addFiveMinutesButton.Visible = false;
+        _addFiveMinutesButton.Click += AddFiveMinutesButton_Click;
         
         // 
         // MainForm

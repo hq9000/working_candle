@@ -186,19 +186,21 @@ public partial class MainForm : Form
     
     /// <summary>
     /// Handles the +5m button click event.
+    /// Jumps forward 5 minutes, reducing remaining time.
     /// </summary>
     private void AddFiveMinutesButton_Click(object? sender, EventArgs e)
     {
-        // Add 5 minutes (300 seconds) to the timer
-        _timerController.AdjustTime(300);
+        // Jump forward 5 minutes (reduce remaining time by 300 seconds)
+        _timerController.JumpForward(300);
     }
     
     /// <summary>
     /// Handles the -5m button click event.
+    /// Jumps backward 5 minutes, increasing remaining time.
     /// </summary>
     private void SubtractFiveMinutesButton_Click(object? sender, EventArgs e)
     {
-        // Subtract 5 minutes (300 seconds) from the timer
-        _timerController.AdjustTime(-300);
+        // Jump backward 5 minutes (increase remaining time by 300 seconds)
+        _timerController.JumpBackward(300);
     }
 }
