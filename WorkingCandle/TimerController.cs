@@ -104,6 +104,71 @@ public class TimerController
     }
 
     /// <summary>
+    /// Jumps forward in time by reducing the remaining time by the specified seconds.
+    /// If remaining time becomes zero or negative, triggers timer completion.
+    /// </summary>
+    /// <param name="seconds">The number of seconds to jump forward.</param>
+    public void JumpForward(int seconds)
+    {
+        // Only allow adjustments when the timer is running
+        if (!_uiTimer.Enabled)
+        {
+            return;
+        }
+        
+        // Calculate current elapsed time and remaining time
+        TimeSpan elapsed = DateTime.Now - _startTime - _pausedDuration;
+        int currentSecondsRemaining = TIMER_DURATION_SECONDS - (int)elapsed.TotalSeconds;
+        
+        // Calculate what the new remaining time would be after jumping forward
+        int newSecondsRemaining = currentSecondsRemaining - seconds;
+        
+        // If jumping forward would make time zero or negative, trigger completion
+        if (newSecondsRemaining <= 0)
+        {
+            // Set start time such that remaining time is 0
+            _startTime = DateTime.Now - _pausedDuration - TimeSpan.FromSeconds(TIMER_DURATION_SECONDS);
+            // Trigger completion on next tick (which will happen immediately)
+            return;
+        }
+        
+        // Adjust the start time to reduce remaining time
+        // To reduce remaining time, we make start time earlier (subtract seconds)
+        _startTime = _startTime.AddSeconds(-seconds);
+    }
+    
+    /// <summary>
+    /// Jumps backward in time by increasing the remaining time by the specified seconds.
+    /// Cannot exceed the maximum timer duration.
+    /// </summary>
+    /// <param name="seconds">The number of seconds to jump backward.</param>
+    public void JumpBackward(int seconds)
+    {
+        // Only allow adjustments when the timer is running
+        if (!_uiTimer.Enabled)
+        {
+            return;
+        }
+        
+        // Calculate current elapsed time and remaining time
+        TimeSpan elapsed = DateTime.Now - _startTime - _pausedDuration;
+        int currentSecondsRemaining = TIMER_DURATION_SECONDS - (int)elapsed.TotalSeconds;
+        
+        // Calculate what the new remaining time would be after jumping backward
+        int newSecondsRemaining = currentSecondsRemaining + seconds;
+        
+        // Cap at maximum timer duration
+        if (newSecondsRemaining > TIMER_DURATION_SECONDS)
+        {
+            seconds = TIMER_DURATION_SECONDS - currentSecondsRemaining;
+        }
+        
+        // Adjust the start time to increase remaining time
+        // To increase remaining time, we make start time later (add seconds)
+        _startTime = _startTime.AddSeconds(seconds);
+    }
+
+    /// <summary>
     /// Handles the timer tick event.
     /// </summary>
     private void OnTimerTick(object? sender, EventArgs e)

@@ -92,6 +92,8 @@ public partial class MainForm : Form
                 _pauseButton.Visible = false;
                 _resumeButton.Visible = false;
                 _stopButton.Visible = false;
+                _addFiveMinutesButton.Visible = false;
+                _subtractFiveMinutesButton.Visible = false;
                 
                 // Reset time display
                 _timeLabel.Text = INITIAL_TIME_DISPLAY;
@@ -107,6 +109,10 @@ public partial class MainForm : Form
                 _timeLabel.Visible = true;
                 _pauseButton.Visible = true;
                 
+                // Show +5m and -5m buttons when timer is running
+                _addFiveMinutesButton.Visible = true;
+                _subtractFiveMinutesButton.Visible = true;
+                
                 // Hide Resume and Stop buttons
                 _resumeButton.Visible = false;
                 _stopButton.Visible = false;
@@ -116,6 +122,10 @@ public partial class MainForm : Form
                 // Hide Start and Pause buttons
                 _startButton.Visible = false;
                 _pauseButton.Visible = false;
+                
+                // Hide +5m and -5m buttons when paused
+                _addFiveMinutesButton.Visible = false;
+                _subtractFiveMinutesButton.Visible = false;
                 
                 // Show Progress bar, Time display, Resume, and Stop buttons
                 _progressBar.Visible = true;
@@ -172,5 +182,25 @@ public partial class MainForm : Form
             _timerController.Stop();
             _stateManager.TransitionTo(StateManager.State.Stopped);
         }
+    }
+    
+    /// <summary>
+    /// Handles the +5m button click event.
+    /// Jumps forward 5 minutes, reducing remaining time.
+    /// </summary>
+    private void AddFiveMinutesButton_Click(object? sender, EventArgs e)
+    {
+        // Jump forward 5 minutes (reduce remaining time by 300 seconds)
+        _timerController.JumpForward(300);
+    }
+    
+    /// <summary>
+    /// Handles the -5m button click event.
+    /// Jumps backward 5 minutes, increasing remaining time.
+    /// </summary>
+    private void SubtractFiveMinutesButton_Click(object? sender, EventArgs e)
+    {
+        // Jump backward 5 minutes (increase remaining time by 300 seconds)
+        _timerController.JumpBackward(300);
     }
 }
