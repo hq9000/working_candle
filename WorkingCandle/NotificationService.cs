@@ -14,8 +14,8 @@ public class NotificationService : IDisposable
     private bool _disposed = false;
     private readonly object _syncLock = new object();
     
-    private const int BALLOON_TIP_DURATION_MS = 5000;
-    private const int TRAY_ICON_CLEANUP_DELAY_MS = 6000; // 1 second longer than balloon tip duration
+    private const int BalloonTipDurationMs = 5000;
+    private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
 
     /// <summary>
     /// Initializes a new instance of the NotificationService class.
@@ -111,7 +111,7 @@ public class NotificationService : IDisposable
                 {
                     _notifyIcon.Visible = true;
                     _notifyIcon.ShowBalloonTip(
-                        BALLOON_TIP_DURATION_MS,
+                        BalloonTipDurationMs,
                         "Working Candle",
                         "Your 1-hour focus session is complete!",
                         ToolTipIcon.Info
@@ -119,16 +119,24 @@ public class NotificationService : IDisposable
                     
                     // Hide after a short delay to clean up the tray
                     // Note: NotifyIcon.Visible is thread-safe and can be set from any thread
-                    Task.Delay(TRAY_ICON_CLEANUP_DELAY_MS).ContinueWith(_ =>
+                    Task.Delay(TrayIconCleanupDelayMs).ContinueWith(_ =>
                     {
-                        lock (_syncLock)
+                        try
                         {
-                            if (!_disposed && _notifyIcon != null)
+                            lock (_syncLock)
                             {
-                                _notifyIcon.Visible = false;
+                                if (!_disposed && _notifyIcon != null)
+                                {
+                                    _notifyIcon.Visible = false;
+                                }
                             }
                         }
-                    });
+                        catch (Exception ex)
+                        {
+                            // Silent failure - object may have been disposed
+                            Debug.WriteLine($"Warning: Could not hide tray icon: {ex.Message}");
+                        }
+                    }, TaskContinuationOptions.None);
                 }
             }
             catch (Exception ex)
