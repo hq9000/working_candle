@@ -5,11 +5,12 @@ using System.Reflection;
 namespace WorkingCandle;
 
 /// <summary>
-/// Service responsible for playing notification sounds.
+/// Service responsible for playing notification sounds and displaying tray notifications.
 /// </summary>
 public class NotificationService : IDisposable
 {
     private SoundPlayer? _soundPlayer;
+    private NotifyIcon? _notifyIcon;
     private bool _disposed = false;
 
     /// <summary>
@@ -42,6 +43,32 @@ public class NotificationService : IDisposable
     }
 
     /// <summary>
+    /// Initializes the tray notification with the specified icon.
+    /// </summary>
+    /// <param name="icon">The icon to use for tray notifications.</param>
+    public void InitializeTrayNotification(Icon? icon)
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(NotificationService));
+        }
+
+        try
+        {
+            _notifyIcon = new NotifyIcon
+            {
+                Icon = icon ?? SystemIcons.Application,
+                Visible = false, // Only show when needed
+                Text = "Working Candle"
+            };
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Warning: Could not initialize tray notification: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Plays the completion sound when the timer finishes.
     /// </summary>
     public void PlayCompletionSound()
@@ -59,6 +86,45 @@ public class NotificationService : IDisposable
         {
             // Silent failure - graceful degradation
             Debug.WriteLine($"Warning: Could not play completion sound: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows a tray notification (balloon tip) when the timer completes.
+    /// </summary>
+    public void ShowCompletionNotification()
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(NotificationService));
+        }
+
+        try
+        {
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = true;
+                _notifyIcon.ShowBalloonTip(
+                    5000, // Show for 5 seconds
+                    "Working Candle",
+                    "Your 1-hour focus session is complete!",
+                    ToolTipIcon.Info
+                );
+                
+                // Hide after a short delay to clean up the tray
+                Task.Delay(6000).ContinueWith(_ =>
+                {
+                    if (!_disposed && _notifyIcon != null)
+                    {
+                        _notifyIcon.Visible = false;
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            // Silent failure - graceful degradation
+            Debug.WriteLine($"Warning: Could not show tray notification: {ex.Message}");
         }
     }
 
@@ -83,6 +149,9 @@ public class NotificationService : IDisposable
             {
                 _soundPlayer?.Dispose();
                 _soundPlayer = null;
+                
+                _notifyIcon?.Dispose();
+                _notifyIcon = null;
             }
             _disposed = true;
         }
