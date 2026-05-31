@@ -38,6 +38,8 @@ partial class MainForm
         _pauseButton = new Button();
         _resumeButton = new Button();
         _stopButton = new Button();
+        _addFiveMinutesButton = new Button();
+        _subtractFiveMinutesButton = new Button();
         
         SuspendLayout();
         
@@ -117,6 +119,32 @@ partial class MainForm
         _stopButton.Click += StopButton_Click;
         
         // 
+        // _addFiveMinutesButton
+        // 
+        _addFiveMinutesButton.Location = new Point(40, 180);
+        _addFiveMinutesButton.Name = "_addFiveMinutesButton";
+        _addFiveMinutesButton.Size = new Size(70, 40);
+        _addFiveMinutesButton.TabIndex = 6;
+        _addFiveMinutesButton.Text = "+5m";
+        _addFiveMinutesButton.UseVisualStyleBackColor = true;
+        _addFiveMinutesButton.Font = new Font("Segoe UI", 9F);
+        _addFiveMinutesButton.Visible = false;
+        _addFiveMinutesButton.Click += AddFiveMinutesButton_Click;
+        
+        // 
+        // _subtractFiveMinutesButton
+        // 
+        _subtractFiveMinutesButton.Location = new Point(120, 180);
+        _subtractFiveMinutesButton.Name = "_subtractFiveMinutesButton";
+        _subtractFiveMinutesButton.Size = new Size(70, 40);
+        _subtractFiveMinutesButton.TabIndex = 7;
+        _subtractFiveMinutesButton.Text = "-5m";
+        _subtractFiveMinutesButton.UseVisualStyleBackColor = true;
+        _subtractFiveMinutesButton.Font = new Font("Segoe UI", 9F);
+        _subtractFiveMinutesButton.Visible = false;
+        _subtractFiveMinutesButton.Click += SubtractFiveMinutesButton_Click;
+        
+        // 
         // MainForm
         // 
         AutoScaleMode = AutoScaleMode.Font;
@@ -127,6 +155,8 @@ partial class MainForm
         Controls.Add(_pauseButton);
         Controls.Add(_resumeButton);
         Controls.Add(_stopButton);
+        Controls.Add(_addFiveMinutesButton);
+        Controls.Add(_subtractFiveMinutesButton);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         Name = "MainForm";
@@ -164,4 +194,6 @@ partial class MainForm
     private Button _pauseButton;
     private Button _resumeButton;
     private Button _stopButton;
+    private Button _addFiveMinutesButton;
+    private Button _subtractFiveMinutesButton;
 }

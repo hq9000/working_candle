@@ -104,6 +104,19 @@ public class TimerController
     }
 
     /// <summary>
+    /// Adjusts the timer by adding or subtracting seconds from the remaining time.
+    /// Positive values add time, negative values subtract time.
+    /// </summary>
+    /// <param name="seconds">The number of seconds to adjust (can be positive or negative).</param>
+    public void AdjustTime(int seconds)
+    {
+        // Adjust the start time to effectively add/subtract time from the remaining time
+        // Adding seconds means we started earlier (more time remaining)
+        // Subtracting seconds means we started later (less time remaining)
+        _startTime = _startTime.AddSeconds(-seconds);
+    }
+
+    /// <summary>
     /// Handles the timer tick event.
     /// </summary>
     private void OnTimerTick(object? sender, EventArgs e)
