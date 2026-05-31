@@ -133,7 +133,7 @@ public class TimerController
         }
         
         // Adjust the start time to reduce remaining time
-        // Subtracting from remaining time means we started earlier
+        // To reduce remaining time, we add to start time (makes it later, closer to now)
         _startTime = _startTime.AddSeconds(seconds);
     }
     
@@ -164,7 +164,7 @@ public class TimerController
         }
         
         // Adjust the start time to increase remaining time
-        // Adding to remaining time means we started later
+        // To increase remaining time, we subtract from start time (makes it earlier)
         _startTime = _startTime.AddSeconds(-seconds);
     }
 
