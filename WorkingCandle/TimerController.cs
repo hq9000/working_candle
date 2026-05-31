@@ -110,6 +110,12 @@ public class TimerController
     /// <param name="seconds">The number of seconds to adjust (can be positive or negative).</param>
     public void AdjustTime(int seconds)
     {
+        // Only allow adjustments when the timer is running
+        if (!_uiTimer.Enabled)
+        {
+            return;
+        }
+        
         // Calculate current elapsed time and remaining time
         TimeSpan elapsed = DateTime.Now - _startTime - _pausedDuration;
         int currentSecondsRemaining = TIMER_DURATION_SECONDS - (int)elapsed.TotalSeconds;
@@ -132,6 +138,7 @@ public class TimerController
         // Adjust the start time to effectively add/subtract time from the remaining time
         // Adding seconds means we started earlier (more time remaining)
         // Subtracting seconds means we started later (less time remaining)
+        // Note: This is thread-safe because System.Windows.Forms.Timer always runs on the UI thread
         _startTime = _startTime.AddSeconds(-seconds);
     }
 
