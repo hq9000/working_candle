@@ -16,6 +16,9 @@ public partial class MainForm : Form
         _stateManager = new StateManager();
         _timerController = new TimerController();
         _notificationService = new NotificationService();
+        
+        // Initialize tray notification with the form's icon
+        _notificationService.InitializeTrayNotification(this.Icon);
 
         // Subscribe to state change events
         _stateManager.StateChanged += OnStateChanged;
@@ -69,6 +72,9 @@ public partial class MainForm : Form
     {
         // Play completion sound
         _notificationService.PlayCompletionSound();
+        
+        // Show tray notification
+        _notificationService.ShowCompletionNotification();
         
         // Transition to STOPPED state
         _stateManager.TransitionTo(StateManager.State.Stopped);
