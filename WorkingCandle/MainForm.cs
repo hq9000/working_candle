@@ -110,18 +110,18 @@ public partial class MainForm : Form
                 // Hide Start button
                 _startButton.Visible = false;
                 
-                // Show Progress bar, Time display, and Pause button
+                // Show Progress bar, Time display, Pause, and Stop buttons
                 _progressBar.Visible = true;
                 _timeLabel.Visible = true;
                 _pauseButton.Visible = true;
+                _stopButton.Visible = true;
                 
                 // Show +5m and -5m buttons when timer is running
                 _addFiveMinutesButton.Visible = true;
                 _subtractFiveMinutesButton.Visible = true;
                 
-                // Hide Resume and Stop buttons
+                // Hide Resume button
                 _resumeButton.Visible = false;
-                _stopButton.Visible = false;
                 break;
                 
             case StateManager.State.Paused:

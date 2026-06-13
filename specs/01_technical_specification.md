@@ -153,14 +153,14 @@ Working Candle is a minimalist Windows desktop application designed to help user
 **Pause Button (RUNNING state)**
 - **Text**: "Pause"
 - **Size**: 150×45 pixels
-- **Position**: Bottom center of window
+- **Position**: Bottom center left
 
 **Resume Button (PAUSED state)**
 - **Text**: "Resume"
 - **Size**: 150×45 pixels
 - **Position**: Bottom center left
 
-**Stop Button (PAUSED state)**
+**Stop Button (RUNNING & PAUSED states)**
 - **Text**: "Stop"
 - **Size**: 150×45 pixels
 - **Position**: Bottom center right
@@ -171,7 +171,7 @@ Working Candle is a minimalist Windows desktop application designed to help user
 | State   | Progress Bar | Time Display | Buttons              |
 |---------|-------------|--------------|----------------------|
 | STOPPED | Hidden      | Hidden       | [Start 1h Timer]     |
-| RUNNING | Visible     | Visible      | [Pause]              |
+| RUNNING | Visible     | Visible      | [Pause] [Stop]       |
 | PAUSED  | Visible     | Visible      | [Resume] [Stop]      |
 
 ## 6. Core Functionality

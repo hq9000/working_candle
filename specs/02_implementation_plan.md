@@ -250,10 +250,10 @@ WorkingCandle/
 - [ ] Add Pause button:
   - Text: "Pause"
   - Size: 150×45 pixels
-  - Position: Bottom center
+  - Position: Bottom center left
   - Initially hidden
 
-#### 4.3 Create UI Controls (PAUSED State)
+#### 4.3 Create UI Controls (PAUSED & RUNNING States)
 - [ ] Add Resume button:
   - Text: "Resume"
   - Size: 150×45 pixels
@@ -272,8 +272,8 @@ WorkingCandle/
   - Hide Progress bar, Time display, Pause, Resume, Stop buttons
 - [ ] Implement UI updates for RUNNING state:
   - Hide Start button
-  - Show Progress bar, Time display, Pause button
-  - Hide Resume, Stop buttons
+  - Show Progress bar, Time display, Pause, Stop buttons
+  - Hide Resume button
 - [ ] Implement UI updates for PAUSED state:
   - Hide Start, Pause buttons
   - Show Progress bar, Time display, Resume, Stop buttons

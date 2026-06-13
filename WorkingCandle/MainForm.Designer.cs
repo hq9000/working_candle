@@ -81,7 +81,7 @@ partial class MainForm
         // 
         // _pauseButton
         // 
-        _pauseButton.Location = new Point(125, 210);
+        _pauseButton.Location = new Point(40, 210);
         _pauseButton.Name = "_pauseButton";
         _pauseButton.Size = new Size(150, 45);
         _pauseButton.TabIndex = 3;
