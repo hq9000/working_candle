@@ -22,6 +22,7 @@ stopped, running, paused
 
 progress bar
 pause button
+stop button
 
 ## paused state
 

@@ -38,7 +38,7 @@
 - [ ] Progress bar appears
 - [ ] Progress bar starts at 0%
 - [ ] Time display appears below progress bar
-- [ ] Pause button appears
+- [ ] Pause button and Stop button appear
 - [ ] Start button is hidden
 
 ### Timer Running
@@ -67,10 +67,10 @@
 - [ ] Multiple pause/resume cycles work correctly
 
 ### Stop Functionality
-- [ ] Click Stop button (when paused) resets timer
+- [ ] Click Stop button (when running or paused) resets timer
 - [ ] Application returns to initial STOPPED state
 - [ ] Start button reappears
-- [ ] Progress bar, time display, Resume, and Stop buttons are hidden
+- [ ] Progress bar, time display, Resume, Pause, and Stop buttons are hidden
 - [ ] Can start new timer after stopping
 
 ### Timer Completion
