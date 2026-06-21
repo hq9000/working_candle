@@ -22,6 +22,17 @@ public partial class MainForm : Form
         
         // Initialize tray notification with the form's icon
         _notificationService.InitializeTrayNotification(this.Icon);
+        
+        // Setup context menu for tray icon with handlers
+        _notificationService.SetupContextMenu(
+            onStart: TrayStartButton_Click,
+            onStop: TrayStopButton_Click,
+            onPause: TrayPauseButton_Click,
+            onResume: TrayResumeButton_Click,
+            onAddFiveMinutes: TrayAddFiveMinutesButton_Click,
+            onSubtractFiveMinutes: TraySubtractFiveMinutesButton_Click,
+            onExit: TrayExitButton_Click
+        );
 
         // Subscribe to state change events
         _stateManager.StateChanged += OnStateChanged;
@@ -33,6 +44,9 @@ public partial class MainForm : Form
         _timerController.TimerStopped += OnTimerStopped;
         _timerController.TimerTick += OnTimerTick;
         _timerController.TimerCompleted += OnTimerCompleted;
+        
+        // Initialize context menu state
+        _notificationService.UpdateContextMenuState(_stateManager.CurrentState);
     }
 
     private void OnStateChanged(object? sender, StateManager.State newState)
@@ -43,6 +57,9 @@ public partial class MainForm : Form
         int minutesRemaining = CalculateMinutesRemaining();
         _notificationService.UpdateTaskbarIcon(newState, minutesRemaining);
         UpdateTaskbarTitle(newState, minutesRemaining);
+        
+        // Update context menu state
+        _notificationService.UpdateContextMenuState(newState);
     }
 
     private void OnTimerStarted(object? sender, EventArgs e)
@@ -261,5 +278,63 @@ public partial class MainForm : Form
     {
         // Jump backward 5 minutes (increase remaining time by 300 seconds)
         _timerController.JumpBackward(300);
+    }
+    
+    /// <summary>
+    /// Handles the Start action from the tray icon context menu.
+    /// </summary>
+    private void TrayStartButton_Click(object? sender, EventArgs e)
+    {
+        StartButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the Stop action from the tray icon context menu.
+    /// </summary>
+    private void TrayStopButton_Click(object? sender, EventArgs e)
+    {
+        StopButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the Pause action from the tray icon context menu.
+    /// </summary>
+    private void TrayPauseButton_Click(object? sender, EventArgs e)
+    {
+        PauseButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the Resume action from the tray icon context menu.
+    /// </summary>
+    private void TrayResumeButton_Click(object? sender, EventArgs e)
+    {
+        ResumeButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the +5m action from the tray icon context menu.
+    /// </summary>
+    private void TrayAddFiveMinutesButton_Click(object? sender, EventArgs e)
+    {
+        AddFiveMinutesButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the -5m action from the tray icon context menu.
+    /// </summary>
+    private void TraySubtractFiveMinutesButton_Click(object? sender, EventArgs e)
+    {
+        SubtractFiveMinutesButton_Click(sender, e);
+    }
+    
+    /// <summary>
+    /// Handles the Exit action from the tray icon context menu.
+    /// </summary>
+    private void TrayExitButton_Click(object? sender, EventArgs e)
+    {
+        // Clean up and exit the application
+        _notificationService.Dispose();
+        Application.Exit();
     }
 }

@@ -21,6 +21,14 @@ public class NotificationService : IDisposable
     private Icon? _currentDynamicIcon;
     private IntPtr _currentIconHandle = IntPtr.Zero;
     private bool _isBaseIconSystemIcon = false;
+    private ContextMenuStrip? _contextMenu;
+    private ToolStripMenuItem? _startMenuItem;
+    private ToolStripMenuItem? _stopMenuItem;
+    private ToolStripMenuItem? _pauseMenuItem;
+    private ToolStripMenuItem? _resumeMenuItem;
+    private ToolStripMenuItem? _addFiveMinutesMenuItem;
+    private ToolStripMenuItem? _subtractFiveMinutesMenuItem;
+    private ToolStripMenuItem? _exitMenuItem;
     
     private const int BalloonTipDurationMs = 5000;
     private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
@@ -130,6 +138,119 @@ public class NotificationService : IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine($"Warning: Could not initialize tray notification: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Sets up the context menu for the tray icon with action callbacks.
+    /// </summary>
+    /// <param name="onStart">Callback for Start action.</param>
+    /// <param name="onStop">Callback for Stop action.</param>
+    /// <param name="onPause">Callback for Pause action.</param>
+    /// <param name="onResume">Callback for Resume action.</param>
+    /// <param name="onAddFiveMinutes">Callback for +5m action.</param>
+    /// <param name="onSubtractFiveMinutes">Callback for -5m action.</param>
+    /// <param name="onExit">Callback for Exit action.</param>
+    public void SetupContextMenu(
+        EventHandler onStart,
+        EventHandler onStop,
+        EventHandler onPause,
+        EventHandler onResume,
+        EventHandler onAddFiveMinutes,
+        EventHandler onSubtractFiveMinutes,
+        EventHandler onExit)
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(NotificationService));
+        }
+
+        if (_notifyIcon == null)
+        {
+            throw new InvalidOperationException("Tray notification must be initialized before setting up context menu.");
+        }
+
+        try
+        {
+            // Create context menu
+            _contextMenu = new ContextMenuStrip();
+            
+            // Create menu items
+            _startMenuItem = new ToolStripMenuItem("Start", null, onStart);
+            _stopMenuItem = new ToolStripMenuItem("Stop", null, onStop);
+            _pauseMenuItem = new ToolStripMenuItem("Pause", null, onPause);
+            _resumeMenuItem = new ToolStripMenuItem("Resume", null, onResume);
+            _addFiveMinutesMenuItem = new ToolStripMenuItem("+5m", null, onAddFiveMinutes);
+            _subtractFiveMinutesMenuItem = new ToolStripMenuItem("-5m", null, onSubtractFiveMinutes);
+            _exitMenuItem = new ToolStripMenuItem("Exit", null, onExit);
+            
+            // Add items to context menu
+            _contextMenu.Items.Add(_startMenuItem);
+            _contextMenu.Items.Add(_stopMenuItem);
+            _contextMenu.Items.Add(_pauseMenuItem);
+            _contextMenu.Items.Add(_resumeMenuItem);
+            _contextMenu.Items.Add(new ToolStripSeparator());
+            _contextMenu.Items.Add(_addFiveMinutesMenuItem);
+            _contextMenu.Items.Add(_subtractFiveMinutesMenuItem);
+            _contextMenu.Items.Add(new ToolStripSeparator());
+            _contextMenu.Items.Add(_exitMenuItem);
+            
+            // Assign context menu to notify icon
+            _notifyIcon.ContextMenuStrip = _contextMenu;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Warning: Could not setup context menu: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Updates the context menu items' enabled state based on the current timer state.
+    /// </summary>
+    /// <param name="state">The current timer state.</param>
+    public void UpdateContextMenuState(StateManager.State state)
+    {
+        if (_disposed || _contextMenu == null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Use the same state transition logic as MainForm
+            switch (state)
+            {
+                case StateManager.State.Stopped:
+                    _startMenuItem!.Enabled = true;
+                    _stopMenuItem!.Enabled = false;
+                    _pauseMenuItem!.Enabled = false;
+                    _resumeMenuItem!.Enabled = false;
+                    _addFiveMinutesMenuItem!.Enabled = false;
+                    _subtractFiveMinutesMenuItem!.Enabled = false;
+                    break;
+                    
+                case StateManager.State.Running:
+                    _startMenuItem!.Enabled = false;
+                    _stopMenuItem!.Enabled = true;
+                    _pauseMenuItem!.Enabled = true;
+                    _resumeMenuItem!.Enabled = false;
+                    _addFiveMinutesMenuItem!.Enabled = true;
+                    _subtractFiveMinutesMenuItem!.Enabled = true;
+                    break;
+                    
+                case StateManager.State.Paused:
+                    _startMenuItem!.Enabled = false;
+                    _stopMenuItem!.Enabled = true;
+                    _pauseMenuItem!.Enabled = false;
+                    _resumeMenuItem!.Enabled = true;
+                    _addFiveMinutesMenuItem!.Enabled = false;
+                    _subtractFiveMinutesMenuItem!.Enabled = false;
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Warning: Could not update context menu state: {ex.Message}");
         }
     }
     
@@ -411,6 +532,10 @@ public class NotificationService : IDisposable
                         DestroyIcon(_currentIconHandle);
                         _currentIconHandle = IntPtr.Zero;
                     }
+                    
+                    // Clean up context menu
+                    _contextMenu?.Dispose();
+                    _contextMenu = null;
                     
                     _notifyIcon?.Dispose();
                     _notifyIcon = null;
