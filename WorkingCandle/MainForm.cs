@@ -7,6 +7,9 @@ public partial class MainForm : Form
     private readonly NotificationService _notificationService;
     
     private const string INITIAL_TIME_DISPLAY = "60:00";
+    private const int TOTAL_TIMER_MINUTES = 60;
+    private const int SECONDS_PER_MINUTE = 60;
+    private const int PERCENTAGE_DIVISOR = 100;
 
     public MainForm()
     {
@@ -35,6 +38,11 @@ public partial class MainForm : Form
     private void OnStateChanged(object? sender, StateManager.State newState)
     {
         UpdateUIForState(newState);
+        
+        // Update taskbar icon and title when state changes
+        int minutesRemaining = CalculateMinutesRemaining();
+        _notificationService.UpdateTaskbarIcon(newState, minutesRemaining);
+        UpdateTaskbarTitle(newState, minutesRemaining);
     }
 
     private void OnTimerStarted(object? sender, EventArgs e)
@@ -60,12 +68,18 @@ public partial class MainForm : Form
     private void OnTimerTick(object? sender, TimerTickEventArgs e)
     {
         // Update time display in MM:SS countdown format
-        int minutes = e.SecondsRemaining / 60;
-        int seconds = e.SecondsRemaining % 60;
+        int minutes = e.SecondsRemaining / SECONDS_PER_MINUTE;
+        int seconds = e.SecondsRemaining % SECONDS_PER_MINUTE;
         _timeLabel.Text = $"{minutes:D2}:{seconds:D2}";
         
         // Update progress bar value
         _progressBar.Value = e.ProgressPercent;
+        
+        // Update taskbar icon and title with current progress
+        // Round up to show accurate minutes remaining (e.g., 119 seconds = 2 minutes)
+        int minutesRemaining = (int)Math.Ceiling((double)e.SecondsRemaining / SECONDS_PER_MINUTE);
+        _notificationService.UpdateTaskbarIcon(_stateManager.CurrentState, minutesRemaining);
+        UpdateTaskbarTitle(_stateManager.CurrentState, minutesRemaining);
     }
 
     private void OnTimerCompleted(object? sender, EventArgs e)
@@ -78,6 +92,45 @@ public partial class MainForm : Form
         
         // Transition to STOPPED state
         _stateManager.TransitionTo(StateManager.State.Stopped);
+    }
+    
+    /// <summary>
+    /// Calculates the minutes remaining based on the current progress bar value.
+    /// </summary>
+    /// <returns>The number of minutes remaining.</returns>
+    private int CalculateMinutesRemaining()
+    {
+        // When stopped, return total timer duration
+        if (_stateManager.CurrentState == StateManager.State.Stopped)
+        {
+            return TOTAL_TIMER_MINUTES;
+        }
+        
+        // Calculate based on progress bar (0-100%)
+        // Use ceiling to match the rounding behavior in OnTimerTick
+        int progressPercent = _progressBar.Value;
+        double elapsedMinutes = (double)(TOTAL_TIMER_MINUTES * progressPercent) / PERCENTAGE_DIVISOR;
+        int minutesRemaining = TOTAL_TIMER_MINUTES - (int)Math.Ceiling(elapsedMinutes);
+        
+        return Math.Max(0, minutesRemaining);
+    }
+    
+    /// <summary>
+    /// Updates the taskbar title to show the current status and minutes remaining.
+    /// </summary>
+    /// <param name="state">The current timer state.</param>
+    /// <param name="minutesRemaining">The minutes remaining in the timer.</param>
+    private void UpdateTaskbarTitle(StateManager.State state, int minutesRemaining)
+    {
+        string stateText = state switch
+        {
+            StateManager.State.Stopped => "Stopped",
+            StateManager.State.Running => "Running",
+            StateManager.State.Paused => "Paused",
+            _ => "Unknown"
+        };
+        
+        this.Text = $"Working Candle - {stateText} ({minutesRemaining}m)";
     }
     
     /// <summary>
