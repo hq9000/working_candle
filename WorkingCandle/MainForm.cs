@@ -7,6 +7,8 @@ public partial class MainForm : Form
     private readonly NotificationService _notificationService;
     private readonly TaskbarProgressService _taskbarProgressService;
     
+    private int _lastTaskbarProgress = -1;
+    
     private const string INITIAL_TIME_DISPLAY = "60:00";
 
     public MainForm()
@@ -46,20 +48,28 @@ public partial class MainForm : Form
 
     private void OnTimerPaused(object? sender, EventArgs e)
     {
-        // Update taskbar progress to show paused state
+        // Update taskbar progress to show paused state (yellow progress bar)
+        // We keep the progress visible to show how much time has elapsed,
+        // but change the state to Paused to indicate the timer is not running
         _taskbarProgressService.SetProgress(this.Handle, _progressBar.Value, isRunning: false);
+        // Reset progress tracking to ensure state is properly updated when resumed
+        _lastTaskbarProgress = -1;
     }
 
     private void OnTimerResumed(object? sender, EventArgs e)
     {
-        // Update taskbar progress to show running state again
+        // Update taskbar progress to show running state again (green progress bar)
+        // Changes the progress state from Paused to Normal to indicate the timer is running
         _taskbarProgressService.SetProgress(this.Handle, _progressBar.Value, isRunning: true);
     }
 
     private void OnTimerStopped(object? sender, EventArgs e)
     {
-        // Clear taskbar progress when timer is stopped
+        // Clear taskbar progress when timer is stopped to hide the progress display
+        // (unlike paused which keeps the progress visible with yellow color)
         _taskbarProgressService.ClearProgress(this.Handle);
+        // Reset progress tracking for next start
+        _lastTaskbarProgress = -1;
     }
 
     private void OnTimerTick(object? sender, TimerTickEventArgs e)
@@ -72,8 +82,12 @@ public partial class MainForm : Form
         // Update progress bar value
         _progressBar.Value = e.ProgressPercent;
         
-        // Update taskbar progress (show as running state)
-        _taskbarProgressService.SetProgress(this.Handle, e.ProgressPercent, isRunning: true);
+        // Update taskbar progress only when the percentage value changes (throttle updates)
+        if (e.ProgressPercent != _lastTaskbarProgress)
+        {
+            _taskbarProgressService.SetProgress(this.Handle, e.ProgressPercent, isRunning: true);
+            _lastTaskbarProgress = e.ProgressPercent;
+        }
     }
 
     private void OnTimerCompleted(object? sender, EventArgs e)
@@ -112,6 +126,7 @@ public partial class MainForm : Form
                 // Reset time display
                 _timeLabel.Text = INITIAL_TIME_DISPLAY;
                 _progressBar.Value = 0;
+                _lastTaskbarProgress = -1;
                 break;
                 
             case StateManager.State.Running:
@@ -130,6 +145,9 @@ public partial class MainForm : Form
                 
                 // Hide Resume button
                 _resumeButton.Visible = false;
+                
+                // Reset last progress to ensure initial update is sent to taskbar
+                _lastTaskbarProgress = -1;
                 break;
                 
             case StateManager.State.Paused:

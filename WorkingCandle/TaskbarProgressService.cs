@@ -39,15 +39,17 @@ public class TaskbarProgressService : IDisposable
 
     public enum TaskbarProgressState
     {
-        NoProgress = 0,
-        Indeterminate = 1,
-        Normal = 2,
-        Error = 4,
-        Paused = 8
+        // Values from Windows ITaskbarList3 API
+        NoProgress = 0,           // No progress shown on taskbar
+        Indeterminate = 1,        // Indeterminate progress animation
+        Normal = 2,               // Normal progress bar (green/system accent)
+        Error = 4,                // Error progress bar (red)
+        Paused = 8                // Paused progress bar (yellow)
     }
 
     private ITaskbarList3? _taskbarList;
     private bool _disposed = false;
+    private readonly object _disposeLock = new object();
 
     /// <summary>
     /// Initializes a new instance of the TaskbarProgressService class.
@@ -133,18 +135,25 @@ public class TaskbarProgressService : IDisposable
     /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposed)
+        lock (_disposeLock)
         {
-            if (disposing && _taskbarList != null)
+            if (!_disposed)
             {
-                try
+                if (disposing && _taskbarList != null)
                 {
-                    Marshal.ReleaseComObject(_taskbarList);
+                    try
+                    {
+                        Marshal.ReleaseComObject(_taskbarList);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Silently ignore COM release exceptions - object may already be released
+                        Debug.WriteLine($"Debug: COM object release exception ignored: {ex.Message}");
+                    }
+                    _taskbarList = null;
                 }
-                catch { }
-                _taskbarList = null;
+                _disposed = true;
             }
-            _disposed = true;
         }
     }
 
