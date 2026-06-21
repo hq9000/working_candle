@@ -18,6 +18,7 @@ public class NotificationService : IDisposable
     private readonly object _syncLock = new object();
     private Icon? _baseIcon;
     private Icon? _currentDynamicIcon;
+    private IntPtr _currentIconHandle = IntPtr.Zero;
     private bool _isBaseIconSystemIcon = false;
     
     private const int BalloonTipDurationMs = 5000;
@@ -107,15 +108,21 @@ public class NotificationService : IDisposable
 
             try
             {
-                // Dispose of the previous dynamic icon
+                // Clean up previous dynamic icon and its handle
                 if (_currentDynamicIcon != null && _currentDynamicIcon != _baseIcon)
                 {
                     _currentDynamicIcon.Dispose();
                     _currentDynamicIcon = null;
                 }
+                
+                if (_currentIconHandle != IntPtr.Zero)
+                {
+                    DestroyIcon(_currentIconHandle);
+                    _currentIconHandle = IntPtr.Zero;
+                }
 
                 // Generate new icon with status overlay
-                _currentDynamicIcon = GenerateStatusIcon(state, progressPercent);
+                _currentDynamicIcon = GenerateStatusIcon(state, progressPercent, out _currentIconHandle);
                 _notifyIcon.Icon = _currentDynamicIcon;
 
                 // Update tooltip text
@@ -140,8 +147,9 @@ public class NotificationService : IDisposable
     /// </summary>
     /// <param name="state">The current timer state.</param>
     /// <param name="progressPercent">The progress percentage (0-100).</param>
+    /// <param name="iconHandle">Output parameter containing the icon handle that must be destroyed later.</param>
     /// <returns>An icon with the status overlay.</returns>
-    private Icon GenerateStatusIcon(StateManager.State state, int progressPercent)
+    private Icon GenerateStatusIcon(StateManager.State state, int progressPercent, out IntPtr iconHandle)
     {
         // Create a bitmap for the icon
         using (Bitmap bitmap = new Bitmap(IconSize, IconSize, PixelFormat.Format32bppArgb))
@@ -184,18 +192,9 @@ public class NotificationService : IDisposable
                 g.DrawString(percentText, font, textBrush, x, y);
             }
 
-            // Convert bitmap to icon
-            IntPtr hIcon = bitmap.GetHicon();
-            Icon icon = Icon.FromHandle(hIcon);
-            
-            // Clone the icon to ensure it persists after bitmap disposal
-            Icon clonedIcon = (Icon)icon.Clone();
-            
-            // Dispose the original icon and clean up the handle
-            icon.Dispose();
-            DestroyIcon(hIcon);
-            
-            return clonedIcon;
+            // Convert bitmap to icon and return the handle for later cleanup
+            iconHandle = bitmap.GetHicon();
+            return Icon.FromHandle(iconHandle);
         }
     }
 
@@ -280,6 +279,13 @@ public class NotificationService : IDisposable
                     {
                         _currentDynamicIcon.Dispose();
                         _currentDynamicIcon = null;
+                    }
+                    
+                    // Clean up the GDI handle for the dynamic icon
+                    if (_currentIconHandle != IntPtr.Zero)
+                    {
+                        DestroyIcon(_currentIconHandle);
+                        _currentIconHandle = IntPtr.Zero;
                     }
                     
                     _notifyIcon?.Dispose();
