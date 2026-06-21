@@ -7,6 +7,7 @@ public partial class MainForm : Form
     private readonly NotificationService _notificationService;
     
     private const string INITIAL_TIME_DISPLAY = "60:00";
+    private const int TOTAL_TIMER_MINUTES = 60;
 
     public MainForm()
     {
@@ -73,7 +74,8 @@ public partial class MainForm : Form
         _progressBar.Value = e.ProgressPercent;
         
         // Update taskbar icon and title with current progress
-        int minutesRemaining = e.SecondsRemaining / 60;
+        // Round up to show accurate minutes remaining (e.g., 119 seconds = 2 minutes)
+        int minutesRemaining = (int)Math.Ceiling((double)e.SecondsRemaining / 60);
         _notificationService.UpdateTaskbarIcon(_stateManager.CurrentState, minutesRemaining);
         UpdateTaskbarTitle(_stateManager.CurrentState, minutesRemaining);
     }
@@ -96,17 +98,16 @@ public partial class MainForm : Form
     /// <returns>The number of minutes remaining.</returns>
     private int CalculateMinutesRemaining()
     {
-        // When stopped, return 60 minutes
+        // When stopped, return total timer duration
         if (_stateManager.CurrentState == StateManager.State.Stopped)
         {
-            return 60;
+            return TOTAL_TIMER_MINUTES;
         }
         
         // Calculate based on progress bar (0-100%)
         int progressPercent = _progressBar.Value;
-        int totalMinutes = 60;
-        int elapsedMinutes = (totalMinutes * progressPercent) / 100;
-        int minutesRemaining = totalMinutes - elapsedMinutes;
+        int elapsedMinutes = (TOTAL_TIMER_MINUTES * progressPercent) / 100;
+        int minutesRemaining = TOTAL_TIMER_MINUTES - elapsedMinutes;
         
         return Math.Max(0, minutesRemaining);
     }
