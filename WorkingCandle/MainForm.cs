@@ -8,6 +8,8 @@ public partial class MainForm : Form
     
     private const string INITIAL_TIME_DISPLAY = "60:00";
     private const int TOTAL_TIMER_MINUTES = 60;
+    private const int SECONDS_PER_MINUTE = 60;
+    private const int PERCENTAGE_DIVISOR = 100;
 
     public MainForm()
     {
@@ -66,8 +68,8 @@ public partial class MainForm : Form
     private void OnTimerTick(object? sender, TimerTickEventArgs e)
     {
         // Update time display in MM:SS countdown format
-        int minutes = e.SecondsRemaining / 60;
-        int seconds = e.SecondsRemaining % 60;
+        int minutes = e.SecondsRemaining / SECONDS_PER_MINUTE;
+        int seconds = e.SecondsRemaining % SECONDS_PER_MINUTE;
         _timeLabel.Text = $"{minutes:D2}:{seconds:D2}";
         
         // Update progress bar value
@@ -75,7 +77,7 @@ public partial class MainForm : Form
         
         // Update taskbar icon and title with current progress
         // Round up to show accurate minutes remaining (e.g., 119 seconds = 2 minutes)
-        int minutesRemaining = (int)Math.Ceiling((double)e.SecondsRemaining / 60);
+        int minutesRemaining = (int)Math.Ceiling((double)e.SecondsRemaining / SECONDS_PER_MINUTE);
         _notificationService.UpdateTaskbarIcon(_stateManager.CurrentState, minutesRemaining);
         UpdateTaskbarTitle(_stateManager.CurrentState, minutesRemaining);
     }
@@ -106,7 +108,7 @@ public partial class MainForm : Form
         
         // Calculate based on progress bar (0-100%)
         int progressPercent = _progressBar.Value;
-        int elapsedMinutes = (TOTAL_TIMER_MINUTES * progressPercent) / 100;
+        int elapsedMinutes = (TOTAL_TIMER_MINUTES * progressPercent) / PERCENTAGE_DIVISOR;
         int minutesRemaining = TOTAL_TIMER_MINUTES - elapsedMinutes;
         
         return Math.Max(0, minutesRemaining);
