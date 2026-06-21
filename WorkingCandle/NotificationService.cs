@@ -214,6 +214,13 @@ public class NotificationService : IDisposable
         {
             return;
         }
+        
+        // Check if menu items are initialized
+        if (_startMenuItem == null || _stopMenuItem == null || _pauseMenuItem == null ||
+            _resumeMenuItem == null || _addFiveMinutesMenuItem == null || _subtractFiveMinutesMenuItem == null)
+        {
+            return;
+        }
 
         try
         {
@@ -221,30 +228,30 @@ public class NotificationService : IDisposable
             switch (state)
             {
                 case StateManager.State.Stopped:
-                    _startMenuItem!.Enabled = true;
-                    _stopMenuItem!.Enabled = false;
-                    _pauseMenuItem!.Enabled = false;
-                    _resumeMenuItem!.Enabled = false;
-                    _addFiveMinutesMenuItem!.Enabled = false;
-                    _subtractFiveMinutesMenuItem!.Enabled = false;
+                    _startMenuItem.Enabled = true;
+                    _stopMenuItem.Enabled = false;
+                    _pauseMenuItem.Enabled = false;
+                    _resumeMenuItem.Enabled = false;
+                    _addFiveMinutesMenuItem.Enabled = false;
+                    _subtractFiveMinutesMenuItem.Enabled = false;
                     break;
                     
                 case StateManager.State.Running:
-                    _startMenuItem!.Enabled = false;
-                    _stopMenuItem!.Enabled = true;
-                    _pauseMenuItem!.Enabled = true;
-                    _resumeMenuItem!.Enabled = false;
-                    _addFiveMinutesMenuItem!.Enabled = true;
-                    _subtractFiveMinutesMenuItem!.Enabled = true;
+                    _startMenuItem.Enabled = false;
+                    _stopMenuItem.Enabled = true;
+                    _pauseMenuItem.Enabled = true;
+                    _resumeMenuItem.Enabled = false;
+                    _addFiveMinutesMenuItem.Enabled = true;
+                    _subtractFiveMinutesMenuItem.Enabled = true;
                     break;
                     
                 case StateManager.State.Paused:
-                    _startMenuItem!.Enabled = false;
-                    _stopMenuItem!.Enabled = true;
-                    _pauseMenuItem!.Enabled = false;
-                    _resumeMenuItem!.Enabled = true;
-                    _addFiveMinutesMenuItem!.Enabled = false;
-                    _subtractFiveMinutesMenuItem!.Enabled = false;
+                    _startMenuItem.Enabled = false;
+                    _stopMenuItem.Enabled = true;
+                    _pauseMenuItem.Enabled = false;
+                    _resumeMenuItem.Enabled = true;
+                    _addFiveMinutesMenuItem.Enabled = false;
+                    _subtractFiveMinutesMenuItem.Enabled = false;
                     break;
             }
         }

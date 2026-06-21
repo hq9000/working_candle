@@ -333,8 +333,7 @@ public partial class MainForm : Form
     /// </summary>
     private void TrayExitButton_Click(object? sender, EventArgs e)
     {
-        // Clean up and exit the application
-        _notificationService.Dispose();
+        // Exit the application (form disposal will clean up resources)
         Application.Exit();
     }
 }
