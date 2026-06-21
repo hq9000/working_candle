@@ -25,13 +25,13 @@ public partial class MainForm : Form
         
         // Setup context menu for tray icon with handlers
         _notificationService.SetupContextMenu(
-            onStart: TrayStartButton_Click,
-            onStop: TrayStopButton_Click,
-            onPause: TrayPauseButton_Click,
-            onResume: TrayResumeButton_Click,
-            onAddFiveMinutes: TrayAddFiveMinutesButton_Click,
-            onSubtractFiveMinutes: TraySubtractFiveMinutesButton_Click,
-            onExit: TrayExitButton_Click
+            onStart: StartButton_Click,
+            onStop: StopButton_Click,
+            onPause: PauseButton_Click,
+            onResume: ResumeButton_Click,
+            onAddFiveMinutes: AddFiveMinutesButton_Click,
+            onSubtractFiveMinutes: SubtractFiveMinutesButton_Click,
+            onExit: ExitApplication
         );
 
         // Subscribe to state change events
@@ -281,59 +281,11 @@ public partial class MainForm : Form
     }
     
     /// <summary>
-    /// Handles the Start action from the tray icon context menu.
-    /// </summary>
-    private void TrayStartButton_Click(object? sender, EventArgs e)
-    {
-        StartButton_Click(sender, e);
-    }
-    
-    /// <summary>
-    /// Handles the Stop action from the tray icon context menu.
-    /// </summary>
-    private void TrayStopButton_Click(object? sender, EventArgs e)
-    {
-        StopButton_Click(sender, e);
-    }
-    
-    /// <summary>
-    /// Handles the Pause action from the tray icon context menu.
-    /// </summary>
-    private void TrayPauseButton_Click(object? sender, EventArgs e)
-    {
-        PauseButton_Click(sender, e);
-    }
-    
-    /// <summary>
-    /// Handles the Resume action from the tray icon context menu.
-    /// </summary>
-    private void TrayResumeButton_Click(object? sender, EventArgs e)
-    {
-        ResumeButton_Click(sender, e);
-    }
-    
-    /// <summary>
-    /// Handles the +5m action from the tray icon context menu.
-    /// </summary>
-    private void TrayAddFiveMinutesButton_Click(object? sender, EventArgs e)
-    {
-        AddFiveMinutesButton_Click(sender, e);
-    }
-    
-    /// <summary>
-    /// Handles the -5m action from the tray icon context menu.
-    /// </summary>
-    private void TraySubtractFiveMinutesButton_Click(object? sender, EventArgs e)
-    {
-        SubtractFiveMinutesButton_Click(sender, e);
-    }
-    
-    /// <summary>
     /// Handles the Exit action from the tray icon context menu.
+    /// Closes the application.
     /// </summary>
-    private void TrayExitButton_Click(object? sender, EventArgs e)
+    private void ExitApplication(object? sender, EventArgs e)
     {
-        // Exit the application (form disposal will clean up resources)
         Application.Exit();
     }
 }
