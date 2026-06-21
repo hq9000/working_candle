@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Media;
 using System.Reflection;
 
@@ -13,9 +16,12 @@ public class NotificationService : IDisposable
     private NotifyIcon? _notifyIcon;
     private bool _disposed = false;
     private readonly object _syncLock = new object();
+    private Icon? _baseIcon;
+    private Icon? _currentDynamicIcon;
     
     private const int BalloonTipDurationMs = 5000;
     private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
+    private const int IconSize = 16; // Standard tray icon size
 
     /// <summary>
     /// Initializes a new instance of the NotificationService class.
@@ -59,11 +65,12 @@ public class NotificationService : IDisposable
 
         try
         {
+            _baseIcon = icon ?? SystemIcons.Application;
             _notifyIcon = new NotifyIcon
             {
-                Icon = icon ?? SystemIcons.Application,
-                Visible = false, // Only show when needed
-                Text = "Working Candle"
+                Icon = _baseIcon,
+                Visible = true, // Always visible to show status
+                Text = "Working Candle - Stopped"
             };
         }
         catch (Exception ex)
@@ -71,6 +78,116 @@ public class NotificationService : IDisposable
             Debug.WriteLine($"Warning: Could not initialize tray notification: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Updates the taskbar icon to show the current timer status and progress.
+    /// </summary>
+    /// <param name="state">The current timer state (Stopped, Running, or Paused).</param>
+    /// <param name="progressPercent">The progress percentage (0-100).</param>
+    public void UpdateTaskbarIcon(StateManager.State state, int progressPercent)
+    {
+        lock (_syncLock)
+        {
+            if (_disposed || _notifyIcon == null)
+            {
+                return;
+            }
+
+            try
+            {
+                // Dispose of the previous dynamic icon
+                if (_currentDynamicIcon != null && _currentDynamicIcon != _baseIcon)
+                {
+                    _currentDynamicIcon.Dispose();
+                    _currentDynamicIcon = null;
+                }
+
+                // Generate new icon with status overlay
+                _currentDynamicIcon = GenerateStatusIcon(state, progressPercent);
+                _notifyIcon.Icon = _currentDynamicIcon;
+
+                // Update tooltip text
+                string stateText = state switch
+                {
+                    StateManager.State.Stopped => "Stopped",
+                    StateManager.State.Running => "Running",
+                    StateManager.State.Paused => "Paused",
+                    _ => "Unknown"
+                };
+                _notifyIcon.Text = $"Working Candle - {stateText} ({progressPercent}%)";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Warning: Could not update taskbar icon: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generates a dynamic icon with state indicator and progress percentage.
+    /// </summary>
+    /// <param name="state">The current timer state.</param>
+    /// <param name="progressPercent">The progress percentage (0-100).</param>
+    /// <returns>An icon with the status overlay.</returns>
+    private Icon GenerateStatusIcon(StateManager.State state, int progressPercent)
+    {
+        // Create a bitmap for the icon
+        using (Bitmap bitmap = new Bitmap(IconSize, IconSize, PixelFormat.Format32bppArgb))
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+            // Determine background color based on state
+            Color backgroundColor = state switch
+            {
+                StateManager.State.Stopped => Color.FromArgb(128, 128, 128), // Gray
+                StateManager.State.Running => Color.FromArgb(76, 175, 80), // Green
+                StateManager.State.Paused => Color.FromArgb(255, 152, 0), // Orange
+                _ => Color.Gray
+            };
+
+            // Fill background
+            using (SolidBrush bgBrush = new SolidBrush(backgroundColor))
+            {
+                g.FillRectangle(bgBrush, 0, 0, IconSize, IconSize);
+            }
+
+            // Draw percentage text (white color for visibility)
+            string percentText = progressPercent.ToString();
+            using (Font font = new Font("Arial", 8, FontStyle.Bold))
+            using (SolidBrush textBrush = new SolidBrush(Color.White))
+            {
+                // Measure text to center it
+                SizeF textSize = g.MeasureString(percentText, font);
+                float x = (IconSize - textSize.Width) / 2;
+                float y = (IconSize - textSize.Height) / 2;
+
+                // Draw text with a slight shadow for better readability
+                using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(128, 0, 0, 0)))
+                {
+                    g.DrawString(percentText, font, shadowBrush, x + 1, y + 1);
+                }
+                g.DrawString(percentText, font, textBrush, x, y);
+            }
+
+            // Convert bitmap to icon
+            IntPtr hIcon = bitmap.GetHicon();
+            Icon icon = Icon.FromHandle(hIcon);
+            
+            // Clone the icon to ensure it persists after bitmap disposal
+            Icon clonedIcon = (Icon)icon.Clone();
+            
+            // Clean up the handle
+            DestroyIcon(hIcon);
+            
+            return clonedIcon;
+        }
+    }
+
+    // Import Windows API function to destroy icon handle
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    private static extern bool DestroyIcon(IntPtr handle);
 
     /// <summary>
     /// Plays the completion sound when the timer finishes.
@@ -109,34 +226,12 @@ public class NotificationService : IDisposable
             {
                 if (_notifyIcon != null)
                 {
-                    _notifyIcon.Visible = true;
                     _notifyIcon.ShowBalloonTip(
                         BalloonTipDurationMs,
                         "Working Candle",
                         "Your 1-hour focus session is complete!",
                         ToolTipIcon.Info
                     );
-                    
-                    // Hide after a short delay to clean up the tray
-                    // Note: NotifyIcon.Visible is thread-safe and can be set from any thread
-                    Task.Delay(TrayIconCleanupDelayMs).ContinueWith(_ =>
-                    {
-                        try
-                        {
-                            lock (_syncLock)
-                            {
-                                if (!_disposed && _notifyIcon != null)
-                                {
-                                    _notifyIcon.Visible = false;
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // Silent failure - object may have been disposed
-                            Debug.WriteLine($"Warning: Could not hide tray icon: {ex.Message}");
-                        }
-                    }, TaskContinuationOptions.None);
                 }
             }
             catch (Exception ex)
@@ -171,8 +266,16 @@ public class NotificationService : IDisposable
                     _soundPlayer?.Dispose();
                     _soundPlayer = null;
                     
+                    if (_currentDynamicIcon != null && _currentDynamicIcon != _baseIcon)
+                    {
+                        _currentDynamicIcon.Dispose();
+                        _currentDynamicIcon = null;
+                    }
+                    
                     _notifyIcon?.Dispose();
                     _notifyIcon = null;
+                    
+                    _baseIcon = null;
                 }
                 _disposed = true;
             }

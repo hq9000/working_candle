@@ -35,6 +35,10 @@ public partial class MainForm : Form
     private void OnStateChanged(object? sender, StateManager.State newState)
     {
         UpdateUIForState(newState);
+        
+        // Update taskbar icon when state changes
+        int currentProgress = _progressBar.Value;
+        _notificationService.UpdateTaskbarIcon(newState, currentProgress);
     }
 
     private void OnTimerStarted(object? sender, EventArgs e)
@@ -66,6 +70,9 @@ public partial class MainForm : Form
         
         // Update progress bar value
         _progressBar.Value = e.ProgressPercent;
+        
+        // Update taskbar icon with current progress
+        _notificationService.UpdateTaskbarIcon(_stateManager.CurrentState, e.ProgressPercent);
     }
 
     private void OnTimerCompleted(object? sender, EventArgs e)
