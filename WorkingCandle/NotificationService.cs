@@ -146,38 +146,55 @@ public class NotificationService : IDisposable
         
         try
         {
-            // Get the window handle of the NotifyIcon
-            // We need to use reflection to access the internal Handle property
+            // Get the window handle and ID of the NotifyIcon using reflection
             var type = typeof(NotifyIcon);
             var windowField = type.GetField("window", BindingFlags.NonPublic | BindingFlags.Instance);
+            var idField = type.GetField("id", BindingFlags.NonPublic | BindingFlags.Instance);
             
-            if (windowField != null)
+            if (windowField != null && idField != null)
             {
                 var window = windowField.GetValue(_notifyIcon);
-                if (window != null)
+                var id = idField.GetValue(_notifyIcon);
+                
+                if (window != null && id != null)
                 {
                     var handleProperty = window.GetType().GetProperty("Handle");
                     if (handleProperty != null)
                     {
-                        var handle = (IntPtr)handleProperty.GetValue(window)!;
-                        
-                        // Create NOTIFYICONDATA structure
-                        NOTIFYICONDATA nid = new NOTIFYICONDATA
+                        var handleValue = handleProperty.GetValue(window);
+                        if (handleValue != null)
                         {
-                            cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONDATA)),
-                            hWnd = handle,
-                            uID = 0, // NotifyIcon uses ID 0 by default
-                            uFlags = NIF_STATE,
-                            dwState = 0, // 0 means not hidden
-                            dwStateMask = NIS_HIDDEN // We're modifying the hidden state
-                        };
-                        
-                        // Call Shell_NotifyIcon to modify the icon state
-                        Shell_NotifyIcon(NIM_MODIFY, ref nid);
-                        
-                        // Set icon version to 4 (Windows 7 and later)
-                        nid.uVersion = NOTIFYICON_VERSION_4;
-                        Shell_NotifyIcon(NIM_SETVERSION, ref nid);
+                            var handle = (IntPtr)handleValue;
+                            var iconId = (uint)(int)id;
+                            
+                            // Create NOTIFYICONDATA structure
+                            NOTIFYICONDATA nid = new NOTIFYICONDATA
+                            {
+                                cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONDATA)),
+                                hWnd = handle,
+                                uID = iconId,
+                                uFlags = NIF_STATE,
+                                dwState = 0, // 0 means not hidden
+                                dwStateMask = NIS_HIDDEN // We're modifying the hidden state
+                            };
+                            
+                            // Call Shell_NotifyIcon to modify the icon state
+                            bool result = Shell_NotifyIcon(NIM_MODIFY, ref nid);
+                            if (!result)
+                            {
+                                int error = Marshal.GetLastWin32Error();
+                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_MODIFY) failed with error code: {error}");
+                            }
+                            
+                            // Set icon version to 4 (Windows 7 and later)
+                            nid.uVersion = NOTIFYICON_VERSION_4;
+                            result = Shell_NotifyIcon(NIM_SETVERSION, ref nid);
+                            if (!result)
+                            {
+                                int error = Marshal.GetLastWin32Error();
+                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_SETVERSION) failed with error code: {error}");
+                            }
+                        }
                     }
                 }
             }
