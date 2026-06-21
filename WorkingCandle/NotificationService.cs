@@ -18,6 +18,7 @@ public class NotificationService : IDisposable
     private readonly object _syncLock = new object();
     private Icon? _baseIcon;
     private Icon? _currentDynamicIcon;
+    private bool _isBaseIconSystemIcon = false;
     
     private const int BalloonTipDurationMs = 5000;
     private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
@@ -65,7 +66,10 @@ public class NotificationService : IDisposable
 
         try
         {
+            // Store the icon but mark if it's a system icon (which should not be disposed)
             _baseIcon = icon ?? SystemIcons.Application;
+            _isBaseIconSystemIcon = (icon == null || ReferenceEquals(icon, SystemIcons.Application));
+            
             _notifyIcon = new NotifyIcon
             {
                 Icon = _baseIcon,
@@ -155,7 +159,8 @@ public class NotificationService : IDisposable
 
             // Draw percentage text (white color for visibility)
             string percentText = progressPercent.ToString();
-            using (Font font = new Font("Arial", 8, FontStyle.Bold))
+            // Use system font for better compatibility across different systems
+            using (Font font = new Font(FontFamily.GenericSansSerif, 8, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.White))
             {
                 // Measure text to center it
@@ -178,7 +183,8 @@ public class NotificationService : IDisposable
             // Clone the icon to ensure it persists after bitmap disposal
             Icon clonedIcon = (Icon)icon.Clone();
             
-            // Clean up the handle
+            // Dispose the original icon and clean up the handle
+            icon.Dispose();
             DestroyIcon(hIcon);
             
             return clonedIcon;
@@ -275,6 +281,11 @@ public class NotificationService : IDisposable
                     _notifyIcon?.Dispose();
                     _notifyIcon = null;
                     
+                    // Only dispose _baseIcon if it's not a system icon
+                    if (_baseIcon != null && !_isBaseIconSystemIcon)
+                    {
+                        _baseIcon.Dispose();
+                    }
                     _baseIcon = null;
                 }
                 _disposed = true;
