@@ -17,6 +17,7 @@ partial class MainForm
         {
             components?.Dispose();
             _notificationService?.Dispose();
+            _taskbarProgressService?.Dispose();
         }
         base.Dispose(disposing);
     }

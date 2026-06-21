@@ -5,6 +5,7 @@ public partial class MainForm : Form
     private readonly StateManager _stateManager;
     private readonly TimerController _timerController;
     private readonly NotificationService _notificationService;
+    private readonly TaskbarProgressService _taskbarProgressService;
     
     private const string INITIAL_TIME_DISPLAY = "60:00";
 
@@ -16,6 +17,7 @@ public partial class MainForm : Form
         _stateManager = new StateManager();
         _timerController = new TimerController();
         _notificationService = new NotificationService();
+        _taskbarProgressService = new TaskbarProgressService();
         
         // Initialize tray notification with the form's icon
         _notificationService.InitializeTrayNotification(this.Icon);
@@ -44,17 +46,20 @@ public partial class MainForm : Form
 
     private void OnTimerPaused(object? sender, EventArgs e)
     {
-        // Timer paused event handling
+        // Update taskbar progress to show paused state
+        _taskbarProgressService.SetProgress(this.Handle, _progressBar.Value, isRunning: false);
     }
 
     private void OnTimerResumed(object? sender, EventArgs e)
     {
-        // Timer resumed event handling
+        // Update taskbar progress to show running state again
+        _taskbarProgressService.SetProgress(this.Handle, _progressBar.Value, isRunning: true);
     }
 
     private void OnTimerStopped(object? sender, EventArgs e)
     {
-        // Timer stopped event handling
+        // Clear taskbar progress when timer is stopped
+        _taskbarProgressService.ClearProgress(this.Handle);
     }
 
     private void OnTimerTick(object? sender, TimerTickEventArgs e)
@@ -66,6 +71,9 @@ public partial class MainForm : Form
         
         // Update progress bar value
         _progressBar.Value = e.ProgressPercent;
+        
+        // Update taskbar progress (show as running state)
+        _taskbarProgressService.SetProgress(this.Handle, e.ProgressPercent, isRunning: true);
     }
 
     private void OnTimerCompleted(object? sender, EventArgs e)
