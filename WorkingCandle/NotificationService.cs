@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Media;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace WorkingCandle;
 
@@ -30,8 +31,45 @@ public class NotificationService : IDisposable
     private const int ShadowOffsetY = 1; // Vertical shadow offset
     
     // Import Windows API function to destroy icon handle
-    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool DestroyIcon(IntPtr handle);
+    
+    // Import Windows Shell API to control notification area icon behavior
+    [DllImport("shell32.dll", SetLastError = true)]
+    private static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA pnid);
+    
+    // Constants for Shell_NotifyIcon
+    private const uint NIM_SETVERSION = 0x00000004;
+    private const uint NIM_MODIFY = 0x00000001;
+    private const uint NOTIFYICON_VERSION_4 = 4;
+    
+    // NOTIFYICONDATA structure for Shell_NotifyIcon
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct NOTIFYICONDATA
+    {
+        public uint cbSize;
+        public IntPtr hWnd;
+        public uint uID;
+        public uint uFlags;
+        public uint uCallbackMessage;
+        public IntPtr hIcon;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szTip;
+        public uint dwState;
+        public uint dwStateMask;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string szInfo;
+        public uint uVersion;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+        public string szInfoTitle;
+        public uint dwInfoFlags;
+        public Guid guidItem;
+        public IntPtr hBalloonIcon;
+    }
+    
+    // State flags for notification icon
+    private const uint NIS_HIDDEN = 0x00000001;
+    private const uint NIF_STATE = 0x00000008;
 
     /// <summary>
     /// Initializes a new instance of the NotificationService class.
@@ -85,10 +123,69 @@ public class NotificationService : IDisposable
                 Visible = true, // Always visible to show status
                 Text = "Working Candle - Stopped"
             };
+            
+            // Ensure the icon is shown in the notification area (not hidden in overflow)
+            EnsureIconAlwaysVisible();
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Warning: Could not initialize tray notification: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Ensures the notification icon is always shown in the notification area (not hidden).
+    /// Uses Windows Shell API to set the icon state to always visible.
+    /// </summary>
+    private void EnsureIconAlwaysVisible()
+    {
+        if (_notifyIcon == null)
+        {
+            return;
+        }
+        
+        try
+        {
+            // Get the window handle of the NotifyIcon
+            // We need to use reflection to access the internal Handle property
+            var type = typeof(NotifyIcon);
+            var windowField = type.GetField("window", BindingFlags.NonPublic | BindingFlags.Instance);
+            
+            if (windowField != null)
+            {
+                var window = windowField.GetValue(_notifyIcon);
+                if (window != null)
+                {
+                    var handleProperty = window.GetType().GetProperty("Handle");
+                    if (handleProperty != null)
+                    {
+                        var handle = (IntPtr)handleProperty.GetValue(window)!;
+                        
+                        // Create NOTIFYICONDATA structure
+                        NOTIFYICONDATA nid = new NOTIFYICONDATA
+                        {
+                            cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONDATA)),
+                            hWnd = handle,
+                            uID = 0, // NotifyIcon uses ID 0 by default
+                            uFlags = NIF_STATE,
+                            dwState = 0, // 0 means not hidden
+                            dwStateMask = NIS_HIDDEN // We're modifying the hidden state
+                        };
+                        
+                        // Call Shell_NotifyIcon to modify the icon state
+                        Shell_NotifyIcon(NIM_MODIFY, ref nid);
+                        
+                        // Set icon version to 4 (Windows 7 and later)
+                        nid.uVersion = NOTIFYICON_VERSION_4;
+                        Shell_NotifyIcon(NIM_SETVERSION, ref nid);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Silent failure - this is a best-effort enhancement
+            Debug.WriteLine($"Warning: Could not set notification icon to always visible: {ex.Message}");
         }
     }
 
