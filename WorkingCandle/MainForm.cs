@@ -282,10 +282,10 @@ public partial class MainForm : Form
     
     /// <summary>
     /// Handles the Exit action from the tray icon context menu.
-    /// Closes the application.
+    /// Closes the application properly using the form's Close method for proper cleanup.
     /// </summary>
     private void ExitApplication(object? sender, EventArgs e)
     {
-        Application.Exit();
+        this.Close();
     }
 }
