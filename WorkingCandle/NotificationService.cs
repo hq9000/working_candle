@@ -24,7 +24,7 @@ public class NotificationService : IDisposable
     private const int BalloonTipDurationMs = 5000;
     private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
     private const int IconSize = 16; // Standard tray icon size
-    private const int IconFontSize = 8; // Font size for percentage text
+    private const int IconFontSize = 8; // Font size for minutes text
     private const int ShadowAlpha = 128; // Alpha value for text shadow
     private const int ShadowOffsetX = 1; // Horizontal shadow offset
     private const int ShadowOffsetY = 1; // Vertical shadow offset
@@ -93,11 +93,11 @@ public class NotificationService : IDisposable
     }
 
     /// <summary>
-    /// Updates the taskbar icon to show the current timer status and progress.
+    /// Updates the taskbar icon to show the current timer status and minutes remaining.
     /// </summary>
     /// <param name="state">The current timer state (Stopped, Running, or Paused).</param>
-    /// <param name="progressPercent">The progress percentage (0-100).</param>
-    public void UpdateTaskbarIcon(StateManager.State state, int progressPercent)
+    /// <param name="minutesRemaining">The minutes remaining in the timer.</param>
+    public void UpdateTaskbarIcon(StateManager.State state, int minutesRemaining)
     {
         lock (_syncLock)
         {
@@ -122,7 +122,7 @@ public class NotificationService : IDisposable
                 }
 
                 // Generate new icon with status overlay
-                _currentDynamicIcon = GenerateStatusIcon(state, progressPercent, out _currentIconHandle);
+                _currentDynamicIcon = GenerateStatusIcon(state, minutesRemaining, out _currentIconHandle);
                 _notifyIcon.Icon = _currentDynamicIcon;
 
                 // Update tooltip text
@@ -133,7 +133,7 @@ public class NotificationService : IDisposable
                     StateManager.State.Paused => "Paused",
                     _ => "Unknown"
                 };
-                _notifyIcon.Text = $"Working Candle - {stateText} ({progressPercent}%)";
+                _notifyIcon.Text = $"Working Candle - {stateText} ({minutesRemaining}m)";
             }
             catch (Exception ex)
             {
@@ -143,13 +143,13 @@ public class NotificationService : IDisposable
     }
 
     /// <summary>
-    /// Generates a dynamic icon with state indicator and progress percentage.
+    /// Generates a dynamic icon with state indicator and minutes remaining.
     /// </summary>
     /// <param name="state">The current timer state.</param>
-    /// <param name="progressPercent">The progress percentage (0-100).</param>
+    /// <param name="minutesRemaining">The minutes remaining in the timer.</param>
     /// <param name="iconHandle">Output parameter containing the icon handle that must be destroyed later.</param>
     /// <returns>An icon with the status overlay.</returns>
-    private Icon GenerateStatusIcon(StateManager.State state, int progressPercent, out IntPtr iconHandle)
+    private Icon GenerateStatusIcon(StateManager.State state, int minutesRemaining, out IntPtr iconHandle)
     {
         // Create a bitmap for the icon
         using (Bitmap bitmap = new Bitmap(IconSize, IconSize, PixelFormat.Format32bppArgb))
@@ -173,23 +173,23 @@ public class NotificationService : IDisposable
                 g.FillRectangle(bgBrush, 0, 0, IconSize, IconSize);
             }
 
-            // Draw percentage text (white color for visibility)
-            string percentText = progressPercent.ToString();
+            // Draw minutes text (white color for visibility)
+            string minutesText = minutesRemaining.ToString();
             // Use system font for better compatibility across different systems
             using (Font font = new Font(FontFamily.GenericSansSerif, IconFontSize, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.White))
             {
                 // Measure text to center it
-                SizeF textSize = g.MeasureString(percentText, font);
+                SizeF textSize = g.MeasureString(minutesText, font);
                 float x = (IconSize - textSize.Width) / 2;
                 float y = (IconSize - textSize.Height) / 2;
 
                 // Draw text with a slight shadow for better readability
                 using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(ShadowAlpha, 0, 0, 0)))
                 {
-                    g.DrawString(percentText, font, shadowBrush, x + ShadowOffsetX, y + ShadowOffsetY);
+                    g.DrawString(minutesText, font, shadowBrush, x + ShadowOffsetX, y + ShadowOffsetY);
                 }
-                g.DrawString(percentText, font, textBrush, x, y);
+                g.DrawString(minutesText, font, textBrush, x, y);
             }
 
             // Convert bitmap to icon and return the handle for later cleanup
