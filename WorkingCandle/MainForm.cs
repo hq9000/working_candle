@@ -107,9 +107,10 @@ public partial class MainForm : Form
         }
         
         // Calculate based on progress bar (0-100%)
+        // Use ceiling to match the rounding behavior in OnTimerTick
         int progressPercent = _progressBar.Value;
-        int elapsedMinutes = (TOTAL_TIMER_MINUTES * progressPercent) / PERCENTAGE_DIVISOR;
-        int minutesRemaining = TOTAL_TIMER_MINUTES - elapsedMinutes;
+        double elapsedMinutes = (double)(TOTAL_TIMER_MINUTES * progressPercent) / PERCENTAGE_DIVISOR;
+        int minutesRemaining = TOTAL_TIMER_MINUTES - (int)Math.Ceiling(elapsedMinutes);
         
         return Math.Max(0, minutesRemaining);
     }
