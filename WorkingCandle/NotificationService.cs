@@ -23,6 +23,14 @@ public class NotificationService : IDisposable
     private const int BalloonTipDurationMs = 5000;
     private const int TrayIconCleanupDelayMs = 6000; // 1 second longer than balloon tip duration
     private const int IconSize = 16; // Standard tray icon size
+    private const int IconFontSize = 8; // Font size for percentage text
+    private const int ShadowAlpha = 128; // Alpha value for text shadow
+    private const int ShadowOffsetX = 1; // Horizontal shadow offset
+    private const int ShadowOffsetY = 1; // Vertical shadow offset
+    
+    // Import Windows API function to destroy icon handle
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+    private static extern bool DestroyIcon(IntPtr handle);
 
     /// <summary>
     /// Initializes a new instance of the NotificationService class.
@@ -160,7 +168,7 @@ public class NotificationService : IDisposable
             // Draw percentage text (white color for visibility)
             string percentText = progressPercent.ToString();
             // Use system font for better compatibility across different systems
-            using (Font font = new Font(FontFamily.GenericSansSerif, 8, FontStyle.Bold))
+            using (Font font = new Font(FontFamily.GenericSansSerif, IconFontSize, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.White))
             {
                 // Measure text to center it
@@ -169,9 +177,9 @@ public class NotificationService : IDisposable
                 float y = (IconSize - textSize.Height) / 2;
 
                 // Draw text with a slight shadow for better readability
-                using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(128, 0, 0, 0)))
+                using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(ShadowAlpha, 0, 0, 0)))
                 {
-                    g.DrawString(percentText, font, shadowBrush, x + 1, y + 1);
+                    g.DrawString(percentText, font, shadowBrush, x + ShadowOffsetX, y + ShadowOffsetY);
                 }
                 g.DrawString(percentText, font, textBrush, x, y);
             }
@@ -190,10 +198,6 @@ public class NotificationService : IDisposable
             return clonedIcon;
         }
     }
-
-    // Import Windows API function to destroy icon handle
-    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-    private static extern bool DestroyIcon(IntPtr handle);
 
     /// <summary>
     /// Plays the completion sound when the timer finishes.
