@@ -136,6 +136,8 @@ public class NotificationService : IDisposable
     /// <summary>
     /// Ensures the notification icon is always shown in the notification area (not hidden).
     /// Uses Windows Shell API to set the icon state to always visible.
+    /// NOTE: This method uses reflection to access internal NotifyIcon fields, which is fragile
+    /// and may break in future .NET versions if the internal implementation changes.
     /// </summary>
     private void EnsureIconAlwaysVisible()
     {
@@ -147,6 +149,7 @@ public class NotificationService : IDisposable
         try
         {
             // Get the window handle and ID of the NotifyIcon using reflection
+            // WARNING: This accesses internal implementation details and may break in future versions
             var type = typeof(NotifyIcon);
             var windowField = type.GetField("window", BindingFlags.NonPublic | BindingFlags.Instance);
             var idField = type.GetField("id", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -167,8 +170,8 @@ public class NotificationService : IDisposable
                             var handle = (IntPtr)handleValue;
                             var iconId = (uint)(int)id;
                             
-                            // Create NOTIFYICONDATA structure
-                            NOTIFYICONDATA nid = new NOTIFYICONDATA
+                            // Create NOTIFYICONDATA structure for modifying icon state
+                            NOTIFYICONDATA nidModify = new NOTIFYICONDATA
                             {
                                 cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONDATA)),
                                 hWnd = handle,
@@ -179,20 +182,27 @@ public class NotificationService : IDisposable
                             };
                             
                             // Call Shell_NotifyIcon to modify the icon state
-                            bool result = Shell_NotifyIcon(NIM_MODIFY, ref nid);
+                            bool result = Shell_NotifyIcon(NIM_MODIFY, ref nidModify);
                             if (!result)
                             {
-                                int error = Marshal.GetLastWin32Error();
-                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_MODIFY) failed with error code: {error}");
+                                int modifyError = Marshal.GetLastWin32Error();
+                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_MODIFY) failed with error code: {modifyError}");
                             }
                             
-                            // Set icon version to 4 (Windows 7 and later)
-                            nid.uVersion = NOTIFYICON_VERSION_4;
-                            result = Shell_NotifyIcon(NIM_SETVERSION, ref nid);
+                            // Create NOTIFYICONDATA structure for setting icon version
+                            NOTIFYICONDATA nidSetVersion = new NOTIFYICONDATA
+                            {
+                                cbSize = (uint)Marshal.SizeOf(typeof(NOTIFYICONDATA)),
+                                hWnd = handle,
+                                uID = iconId,
+                                uVersion = NOTIFYICON_VERSION_4 // Windows 7 and later
+                            };
+                            
+                            result = Shell_NotifyIcon(NIM_SETVERSION, ref nidSetVersion);
                             if (!result)
                             {
-                                int error = Marshal.GetLastWin32Error();
-                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_SETVERSION) failed with error code: {error}");
+                                int setVersionError = Marshal.GetLastWin32Error();
+                                Debug.WriteLine($"Warning: Shell_NotifyIcon(NIM_SETVERSION) failed with error code: {setVersionError}");
                             }
                         }
                     }
