@@ -33,6 +33,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\completion.wav" />
     <EmbeddedResource Include="Resources\icon.ico" />
+    <None Include="Resources\icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
