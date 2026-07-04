@@ -177,6 +177,7 @@ partial class MainForm
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine("Warning: Embedded icon resource 'WorkingCandle.Resources.icon.ico' not found. Falling back to loading icon from disk.");
                 string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
                 if (File.Exists(iconPath))
                 {
@@ -192,6 +193,11 @@ partial class MainForm
         catch (UnauthorizedAccessException ex)
         {
             // Silently ignore if we don't have permission to read the icon
+            System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            // Silently ignore if the icon data is invalid or malformed
             System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
         }
         
