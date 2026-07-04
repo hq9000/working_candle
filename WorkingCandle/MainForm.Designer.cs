@@ -163,13 +163,25 @@ partial class MainForm
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Working Candle";
         
-        // Load icon from file
+        // Load icon from the embedded resource first, so the correct icon is always
+        // available regardless of the current working directory or deployment layout
+        // (e.g. single-file publish). Fall back to loading it from disk if, for any
+        // reason, the embedded resource cannot be found.
         try
         {
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
-            if (File.Exists(iconPath))
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            using var iconStream = assembly.GetManifestResourceStream("WorkingCandle.Resources.icon.ico");
+            if (iconStream != null)
             {
-                Icon = new Icon(iconPath);
+                Icon = new Icon(iconStream);
+            }
+            else
+            {
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    Icon = new Icon(iconPath);
+                }
             }
         }
         catch (IOException ex)
