@@ -5,6 +5,7 @@ public partial class MainForm : Form
     private readonly StateManager _stateManager;
     private readonly TimerController _timerController;
     private readonly NotificationService _notificationService;
+    private readonly GlobalHotkeyService _globalHotkeyService;
     
     private const string INITIAL_TIME_DISPLAY = "60:00";
     private const int TOTAL_TIMER_MINUTES = 60;
@@ -19,6 +20,7 @@ public partial class MainForm : Form
         _stateManager = new StateManager();
         _timerController = new TimerController();
         _notificationService = new NotificationService();
+        _globalHotkeyService = new GlobalHotkeyService();
         
         // Initialize tray notification with the form's icon
         _notificationService.InitializeTrayNotification(this.Icon);
@@ -37,6 +39,9 @@ public partial class MainForm : Form
         // Subscribe to state change events
         _stateManager.StateChanged += OnStateChanged;
 
+        // Subscribe to global hotkey events (Right Ctrl toggles pause/resume)
+        _globalHotkeyService.PauseResumeHotkeyPressed += GlobalHotkeyService_PauseResumeHotkeyPressed;
+
         // Subscribe to timer events
         _timerController.TimerStarted += OnTimerStarted;
         _timerController.TimerPaused += OnTimerPaused;
@@ -47,6 +52,41 @@ public partial class MainForm : Form
         
         // Initialize context menu state
         _notificationService.UpdateContextMenuState(_stateManager.CurrentState);
+    }
+
+    /// <summary>
+    /// Registers the global hotkey once the window handle is available.
+    /// </summary>
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        _globalHotkeyService.Register(this.Handle);
+    }
+
+    /// <summary>
+    /// Intercepts Windows messages to detect the global hotkey (WM_HOTKEY).
+    /// </summary>
+    protected override void WndProc(ref Message m)
+    {
+        _globalHotkeyService.ProcessWndProc(ref m);
+        base.WndProc(ref m);
+    }
+
+    /// <summary>
+    /// Handles the global pause/resume hotkey (Right Ctrl) press.
+    /// Pauses the timer when running, or resumes it when paused.
+    /// </summary>
+    private void GlobalHotkeyService_PauseResumeHotkeyPressed(object? sender, EventArgs e)
+    {
+        switch (_stateManager.CurrentState)
+        {
+            case StateManager.State.Running:
+                PauseTimer();
+                break;
+            case StateManager.State.Paused:
+                ResumeTimer();
+                break;
+        }
     }
 
     private void OnStateChanged(object? sender, StateManager.State newState)
@@ -229,6 +269,23 @@ public partial class MainForm : Form
     /// </summary>
     private void PauseButton_Click(object? sender, EventArgs e)
     {
+        PauseTimer();
+    }
+    
+    /// <summary>
+    /// Handles the Resume button click event.
+    /// </summary>
+    private void ResumeButton_Click(object? sender, EventArgs e)
+    {
+        ResumeTimer();
+    }
+    
+    /// <summary>
+    /// Pauses the timer if a transition to the Paused state is currently valid.
+    /// Shared by the Pause button and the global pause/resume hotkey.
+    /// </summary>
+    private void PauseTimer()
+    {
         if (_stateManager.CanTransitionTo(StateManager.State.Paused))
         {
             _timerController.Pause();
@@ -237,9 +294,10 @@ public partial class MainForm : Form
     }
     
     /// <summary>
-    /// Handles the Resume button click event.
+    /// Resumes the timer if a transition to the Running state is currently valid.
+    /// Shared by the Resume button and the global pause/resume hotkey.
     /// </summary>
-    private void ResumeButton_Click(object? sender, EventArgs e)
+    private void ResumeTimer()
     {
         if (_stateManager.CanTransitionTo(StateManager.State.Running))
         {
