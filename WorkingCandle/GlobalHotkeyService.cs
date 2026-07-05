@@ -59,6 +59,7 @@ public class GlobalHotkeyService : IDisposable
 
         if (!_isRegistered)
         {
+            _windowHandle = IntPtr.Zero;
             System.Diagnostics.Debug.WriteLine("Warning: Failed to register global hotkey (Right Ctrl). It may already be in use by another application.");
         }
     }
