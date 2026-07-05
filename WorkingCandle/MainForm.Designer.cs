@@ -163,13 +163,26 @@ partial class MainForm
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Working Candle";
         
-        // Load icon from file
+        // Load icon from the embedded resource first, so the correct icon is always
+        // available regardless of the current working directory or deployment layout
+        // (e.g. single-file publish). Fall back to loading it from disk if, for any
+        // reason, the embedded resource cannot be found.
         try
         {
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
-            if (File.Exists(iconPath))
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            using var iconStream = assembly.GetManifestResourceStream("WorkingCandle.Resources.icon.ico");
+            if (iconStream != null)
             {
-                Icon = new Icon(iconPath);
+                Icon = new Icon(iconStream);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("Warning: Embedded icon resource 'WorkingCandle.Resources.icon.ico' not found. Falling back to loading icon from disk.");
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    Icon = new Icon(iconPath);
+                }
             }
         }
         catch (IOException ex)
@@ -180,6 +193,11 @@ partial class MainForm
         catch (UnauthorizedAccessException ex)
         {
             // Silently ignore if we don't have permission to read the icon
+            System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            // Silently ignore if the icon data is invalid or malformed
             System.Diagnostics.Debug.WriteLine($"Warning: Could not load icon: {ex.Message}");
         }
         
