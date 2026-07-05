@@ -3,92 +3,138 @@ using System.Runtime.InteropServices;
 namespace WorkingCandle;
 
 /// <summary>
-/// Registers and manages a system-wide (global) hotkey using the Win32 RegisterHotKey API,
-/// so that the application can react to the hotkey being pressed regardless of whether
+/// Detects presses of the Right Ctrl key system-wide using a low-level keyboard hook,
+/// so that the application can react to the key being pressed regardless of whether
 /// the application window is focused.
 /// </summary>
+/// <remarks>
+/// A low-level keyboard hook is used instead of the Win32 RegisterHotKey API because
+/// RegisterHotKey does not reliably trigger for a modifier key (like Right Ctrl) used
+/// on its own, since modifier key presses are handled earlier in the input pipeline
+/// and typically never reach the hotkey dispatch mechanism.
+/// </remarks>
 public class GlobalHotkeyService : IDisposable
 {
-    /// <summary>
-    /// Windows message identifier sent when a registered hotkey is pressed.
-    /// </summary>
-    private const int WM_HOTKEY = 0x0312;
-
-    /// <summary>
-    /// Identifier used to register/unregister the pause/resume hotkey.
-    /// </summary>
-    private const int HOTKEY_ID_PAUSE_RESUME = 1;
+    private const int WH_KEYBOARD_LL = 13;
+    private const int WM_KEYDOWN = 0x0100;
+    private const int WM_SYSKEYDOWN = 0x0104;
+    private const int WM_KEYUP = 0x0101;
+    private const int WM_SYSKEYUP = 0x0105;
 
     /// <summary>
     /// Virtual key code for the Right Ctrl key.
     /// </summary>
-    private const uint VK_RCONTROL = 0xA3;
+    private const int VK_RCONTROL = 0xA3;
 
-    /// <summary>
-    /// No modifier keys required for the hotkey.
-    /// </summary>
-    private const uint MOD_NONE = 0x0000;
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KBDLLHOOKSTRUCT
+    {
+        public uint vkCode;
+        public uint scanCode;
+        public uint flags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
-    private IntPtr _windowHandle = IntPtr.Zero;
-    private bool _isRegistered;
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+    // Keep a reference to the delegate for the lifetime of the hook so it isn't
+    // garbage-collected while native code still holds a pointer to it.
+    private readonly LowLevelKeyboardProc _hookProc;
+    private IntPtr _hookHandle = IntPtr.Zero;
+    private bool _isRightCtrlDown;
 
     /// <summary>
-    /// Event raised when the pause/resume global hotkey (Right Ctrl) is pressed.
+    /// Event raised when the Right Ctrl key is pressed (key-down transition).
     /// </summary>
     public event EventHandler? PauseResumeHotkeyPressed;
 
-    /// <summary>
-    /// Registers the global pause/resume hotkey (Right Ctrl) against the specified window handle.
-    /// </summary>
-    /// <param name="windowHandle">The handle of the window that will receive the WM_HOTKEY message.</param>
-    public void Register(IntPtr windowHandle)
+    public GlobalHotkeyService()
     {
-        if (_isRegistered)
+        // Store the delegate in a field to prevent it from being collected by the GC
+        // while the unmanaged hook still references it.
+        _hookProc = HookCallback;
+    }
+
+    /// <summary>
+    /// Installs the low-level keyboard hook used to detect Right Ctrl presses system-wide.
+    /// </summary>
+    public void Register()
+    {
+        if (_hookHandle != IntPtr.Zero)
         {
             return;
         }
 
-        _windowHandle = windowHandle;
-        _isRegistered = RegisterHotKey(_windowHandle, HOTKEY_ID_PAUSE_RESUME, MOD_NONE, VK_RCONTROL);
+        using var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+        using var currentModule = currentProcess.MainModule;
+        IntPtr moduleHandle = currentModule != null
+            ? GetModuleHandle(currentModule.ModuleName)
+            : IntPtr.Zero;
 
-        if (!_isRegistered)
+        _hookHandle = SetWindowsHookEx(WH_KEYBOARD_LL, _hookProc, moduleHandle, 0);
+
+        if (_hookHandle == IntPtr.Zero)
         {
-            _windowHandle = IntPtr.Zero;
-            System.Diagnostics.Debug.WriteLine("Warning: Failed to register global hotkey (Right Ctrl). It may already be in use by another application.");
+            System.Diagnostics.Debug.WriteLine("Warning: Failed to install global keyboard hook for the Right Ctrl hotkey.");
         }
     }
 
     /// <summary>
-    /// Processes a Windows message and raises <see cref="PauseResumeHotkeyPressed"/> if it
-    /// corresponds to the registered pause/resume hotkey.
+    /// Low-level keyboard hook callback. Detects the key-down transition of Right Ctrl
+    /// (ignoring auto-repeat while the key is held) and raises <see cref="PauseResumeHotkeyPressed"/>.
     /// </summary>
-    /// <param name="m">The Windows message to inspect.</param>
-    public void ProcessWndProc(ref Message m)
+    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (m.Msg == WM_HOTKEY && m.WParam.ToInt32() == HOTKEY_ID_PAUSE_RESUME)
+        if (nCode >= 0)
         {
-            PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+            var hookStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+            int message = (int)wParam;
+
+            if (hookStruct.vkCode == VK_RCONTROL)
+            {
+                if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
+                {
+                    if (!_isRightCtrlDown)
+                    {
+                        _isRightCtrlDown = true;
+                        PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+                else if (message is WM_KEYUP or WM_SYSKEYUP)
+                {
+                    _isRightCtrlDown = false;
+                }
+            }
         }
+
+        return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
     }
 
     /// <summary>
-    /// Unregisters the global hotkey and releases associated resources.
+    /// Uninstalls the keyboard hook and releases associated resources.
     /// </summary>
     public void Dispose()
     {
-        if (_isRegistered)
+        if (_hookHandle != IntPtr.Zero)
         {
-            if (!UnregisterHotKey(_windowHandle, HOTKEY_ID_PAUSE_RESUME))
+            if (!UnhookWindowsHookEx(_hookHandle))
             {
-                System.Diagnostics.Debug.WriteLine("Warning: Failed to unregister global hotkey (Right Ctrl).");
+                System.Diagnostics.Debug.WriteLine("Warning: Failed to uninstall global keyboard hook for the Right Ctrl hotkey.");
             }
-            _isRegistered = false;
+            _hookHandle = IntPtr.Zero;
         }
 
         GC.SuppressFinalize(this);

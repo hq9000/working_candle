@@ -41,6 +41,7 @@ public partial class MainForm : Form
 
         // Subscribe to global hotkey events (Right Ctrl toggles pause/resume)
         _globalHotkeyService.PauseResumeHotkeyPressed += GlobalHotkeyService_PauseResumeHotkeyPressed;
+        _globalHotkeyService.Register();
 
         // Subscribe to timer events
         _timerController.TimerStarted += OnTimerStarted;
@@ -52,24 +53,6 @@ public partial class MainForm : Form
         
         // Initialize context menu state
         _notificationService.UpdateContextMenuState(_stateManager.CurrentState);
-    }
-
-    /// <summary>
-    /// Registers the global hotkey once the window handle is available.
-    /// </summary>
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-        _globalHotkeyService.Register(this.Handle);
-    }
-
-    /// <summary>
-    /// Intercepts Windows messages to detect the global hotkey (WM_HOTKEY).
-    /// </summary>
-    protected override void WndProc(ref Message m)
-    {
-        _globalHotkeyService.ProcessWndProc(ref m);
-        base.WndProc(ref m);
     }
 
     /// <summary>
