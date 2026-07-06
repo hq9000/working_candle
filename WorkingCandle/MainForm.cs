@@ -57,12 +57,15 @@ public partial class MainForm : Form
 
     /// <summary>
     /// Handles the global pause/resume hotkey (Right Ctrl) press.
-    /// Pauses the timer when running, or resumes it when paused.
+    /// Starts the timer when stopped, pauses when running, or resumes when paused.
     /// </summary>
     private void GlobalHotkeyService_PauseResumeHotkeyPressed(object? sender, EventArgs e)
     {
         switch (_stateManager.CurrentState)
         {
+            case StateManager.State.Stopped:
+                StartTimer();
+                break;
             case StateManager.State.Running:
                 PauseTimer();
                 break;
@@ -240,11 +243,7 @@ public partial class MainForm : Form
     /// </summary>
     private void StartButton_Click(object? sender, EventArgs e)
     {
-        if (_stateManager.CanTransitionTo(StateManager.State.Running))
-        {
-            _timerController.Start();
-            _stateManager.TransitionTo(StateManager.State.Running);
-        }
+        StartTimer();
     }
     
     /// <summary>
@@ -285,6 +284,19 @@ public partial class MainForm : Form
         if (_stateManager.CanTransitionTo(StateManager.State.Running))
         {
             _timerController.Resume();
+            _stateManager.TransitionTo(StateManager.State.Running);
+        }
+    }
+    
+    /// <summary>
+    /// Starts the timer if a transition to the Running state is currently valid.
+    /// Shared by the Start button and the global pause/resume hotkey.
+    /// </summary>
+    private void StartTimer()
+    {
+        if (_stateManager.CanTransitionTo(StateManager.State.Running))
+        {
+            _timerController.Start();
             _stateManager.TransitionTo(StateManager.State.Running);
         }
     }
