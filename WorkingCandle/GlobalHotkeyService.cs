@@ -134,13 +134,16 @@ public class GlobalHotkeyService : IDisposable
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
                 {
                     bool isShortPress;
+                    System.Threading.Timer? timerToDispose;
                     lock (_keyStateLock)
                     {
                         isShortPress = _isRightCtrlDown && !_longPressTriggered;
                         _isRightCtrlDown = false;
-                        _longPressTimer?.Dispose();
+                        timerToDispose = _longPressTimer;
                         _longPressTimer = null;
                     }
+
+                    timerToDispose?.Dispose();
 
                     if (isShortPress)
                     {
@@ -173,13 +176,15 @@ public class GlobalHotkeyService : IDisposable
     /// </summary>
     public void Dispose()
     {
+        System.Threading.Timer? timerToDispose;
         lock (_keyStateLock)
         {
             _isDisposed = true;
             _isRightCtrlDown = false;
-            _longPressTimer?.Dispose();
+            timerToDispose = _longPressTimer;
             _longPressTimer = null;
         }
+        timerToDispose?.Dispose();
 
         if (_hookHandle != IntPtr.Zero)
         {
