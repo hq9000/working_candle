@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 namespace WorkingCandle;
 
 /// <summary>
-/// Detects presses of the Right Ctrl key system-wide using a low-level keyboard hook,
+/// Detects presses of the Right Ctrl and Right Shift keys system-wide using a low-level keyboard hook,
 /// so that the application can react to the key being pressed regardless of whether
 /// the application window is focused.
 /// </summary>
 /// <remarks>
 /// A low-level keyboard hook is used instead of the Win32 RegisterHotKey API because
-/// RegisterHotKey does not reliably trigger for a modifier key (like Right Ctrl) used
+/// RegisterHotKey does not reliably trigger for modifier keys (like Right Ctrl) used
 /// on its own, since modifier key presses are handled earlier in the input pipeline
 /// and typically never reach the hotkey dispatch mechanism.
 /// </remarks>
@@ -20,12 +20,15 @@ public class GlobalHotkeyService : IDisposable
     private const int WM_SYSKEYDOWN = 0x0104;
     private const int WM_KEYUP = 0x0101;
     private const int WM_SYSKEYUP = 0x0105;
-    private const int LONG_PRESS_THRESHOLD_MS = 1000;
 
     /// <summary>
     /// Virtual key code for the Right Ctrl key.
     /// </summary>
     private const int VK_RCONTROL = 0xA3;
+    /// <summary>
+    /// Virtual key code for the Right Shift key.
+    /// </summary>
+    private const int VK_RSHIFT = 0xA1;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT
@@ -57,17 +60,15 @@ public class GlobalHotkeyService : IDisposable
     private readonly object _keyStateLock = new();
     private IntPtr _hookHandle = IntPtr.Zero;
     private bool _isRightCtrlDown;
-    private bool _longPressTriggered;
-    private System.Threading.Timer? _longPressTimer;
-    private bool _isDisposed;
+    private bool _isRightShiftDown;
 
     /// <summary>
-    /// Event raised when the Right Ctrl key is released after a short press.
+    /// Event raised when the Right Ctrl key is released.
     /// </summary>
     public event EventHandler? PauseResumeHotkeyPressed;
 
     /// <summary>
-    /// Event raised when the Right Ctrl key is held for at least one second.
+    /// Event raised when the Right Shift key is pressed.
     /// </summary>
     public event EventHandler? StopHotkeyPressed;
 
@@ -79,7 +80,7 @@ public class GlobalHotkeyService : IDisposable
     }
 
     /// <summary>
-    /// Installs the low-level keyboard hook used to detect Right Ctrl presses system-wide.
+    /// Installs the low-level keyboard hook used to detect Right Ctrl and Right Shift presses system-wide.
     /// </summary>
     public void Register()
     {
@@ -98,13 +99,13 @@ public class GlobalHotkeyService : IDisposable
 
         if (_hookHandle == IntPtr.Zero)
         {
-            System.Diagnostics.Debug.WriteLine("Warning: Failed to install global keyboard hook for the Right Ctrl hotkey.");
+            System.Diagnostics.Debug.WriteLine("Warning: Failed to install global keyboard hook for the Right Ctrl and Right Shift hotkeys.");
         }
     }
 
     /// <summary>
-    /// Low-level keyboard hook callback. Detects Right Ctrl presses while ignoring
-    /// auto-repeat and distinguishes short presses from long presses.
+    /// Low-level keyboard hook callback. Detects Right Ctrl and Right Shift presses
+    /// while ignoring auto-repeat.
     /// </summary>
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
@@ -117,40 +118,50 @@ public class GlobalHotkeyService : IDisposable
             {
                 if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
                 {
-                    System.Threading.Timer? timerToDispose = null;
                     lock (_keyStateLock)
                     {
                         if (!_isRightCtrlDown)
                         {
                             _isRightCtrlDown = true;
-                            _longPressTriggered = false;
-                            timerToDispose = _longPressTimer;
-                            _longPressTimer = new System.Threading.Timer(
-                                OnLongPressTimerElapsed,
-                                null,
-                                LONG_PRESS_THRESHOLD_MS,
-                                Timeout.Infinite);
                         }
                     }
-                    timerToDispose?.Dispose();
                 }
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
                 {
-                    bool isShortPress;
-                    System.Threading.Timer? timerToDispose;
+                    bool wasDown;
                     lock (_keyStateLock)
                     {
-                        isShortPress = _isRightCtrlDown && !_longPressTriggered;
+                        wasDown = _isRightCtrlDown;
                         _isRightCtrlDown = false;
-                        timerToDispose = _longPressTimer;
-                        _longPressTimer = null;
                     }
 
-                    timerToDispose?.Dispose();
-
-                    if (isShortPress)
+                    if (wasDown)
                     {
                         PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+            }
+            else if (hookStruct.vkCode == VK_RSHIFT)
+            {
+                if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
+                {
+                    bool isFirstPress;
+                    lock (_keyStateLock)
+                    {
+                        isFirstPress = !_isRightShiftDown;
+                        _isRightShiftDown = true;
+                    }
+
+                    if (isFirstPress)
+                    {
+                        StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+                else if (message is WM_KEYUP or WM_SYSKEYUP)
+                {
+                    lock (_keyStateLock)
+                    {
+                        _isRightShiftDown = false;
                     }
                 }
             }
@@ -159,41 +170,22 @@ public class GlobalHotkeyService : IDisposable
         return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
     }
 
-    private void OnLongPressTimerElapsed(object? state)
-    {
-        bool raiseStopEvent;
-        lock (_keyStateLock)
-        {
-            raiseStopEvent = !_isDisposed && _isRightCtrlDown && !_longPressTriggered;
-            _longPressTriggered = raiseStopEvent;
-        }
-
-        if (raiseStopEvent)
-        {
-            StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
-        }
-    }
-
     /// <summary>
     /// Uninstalls the keyboard hook and releases associated resources.
     /// </summary>
     public void Dispose()
     {
-        System.Threading.Timer? timerToDispose;
         lock (_keyStateLock)
         {
-            _isDisposed = true;
             _isRightCtrlDown = false;
-            timerToDispose = _longPressTimer;
-            _longPressTimer = null;
+            _isRightShiftDown = false;
         }
-        timerToDispose?.Dispose();
 
         if (_hookHandle != IntPtr.Zero)
         {
             if (!UnhookWindowsHookEx(_hookHandle))
             {
-                System.Diagnostics.Debug.WriteLine("Warning: Failed to uninstall global keyboard hook for the Right Ctrl hotkey.");
+                System.Diagnostics.Debug.WriteLine("Warning: Failed to uninstall global keyboard hook for the Right Ctrl and Right Shift hotkeys.");
             }
             _hookHandle = IntPtr.Zero;
         }

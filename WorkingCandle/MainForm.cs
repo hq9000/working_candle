@@ -39,7 +39,7 @@ public partial class MainForm : Form
         // Subscribe to state change events
         _stateManager.StateChanged += OnStateChanged;
 
-        // Subscribe to global hotkey events (Right Ctrl toggles pause/resume or stops)
+        // Subscribe to global hotkey events (Right Ctrl pauses/resumes, Right Shift stops)
         _globalHotkeyService.PauseResumeHotkeyPressed += GlobalHotkeyService_PauseResumeHotkeyPressed;
         _globalHotkeyService.StopHotkeyPressed += GlobalHotkeyService_StopHotkeyPressed;
         _globalHotkeyService.Register();
@@ -80,7 +80,7 @@ public partial class MainForm : Form
     }
 
     /// <summary>
-    /// Handles a long Right Ctrl press by stopping the timer.
+    /// Handles the global stop hotkey (Right Shift) press.
     /// </summary>
     private void GlobalHotkeyService_StopHotkeyPressed(object? sender, EventArgs e)
     {
