@@ -131,8 +131,8 @@ public class GlobalHotkeyService : IDisposable
                                 LONG_PRESS_THRESHOLD_MS,
                                 Timeout.Infinite);
                         }
-                        timerToDispose?.Dispose();
                     }
+                    timerToDispose?.Dispose();
                 }
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
                 {
