@@ -59,6 +59,7 @@ public class GlobalHotkeyService : IDisposable
     private bool _isRightCtrlDown;
     private bool _longPressTriggered;
     private System.Threading.Timer? _longPressTimer;
+    private bool _isDisposed;
 
     /// <summary>
     /// Event raised when the Right Ctrl key is released after a short press.
@@ -156,15 +157,14 @@ public class GlobalHotkeyService : IDisposable
     {
         lock (_keyStateLock)
         {
-            if (!_isRightCtrlDown || _longPressTriggered)
+            if (_isDisposed || !_isRightCtrlDown || _longPressTriggered)
             {
                 return;
             }
 
             _longPressTriggered = true;
+            StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
         }
-
-        StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -174,6 +174,7 @@ public class GlobalHotkeyService : IDisposable
     {
         lock (_keyStateLock)
         {
+            _isDisposed = true;
             _isRightCtrlDown = false;
             _longPressTimer?.Dispose();
             _longPressTimer = null;
