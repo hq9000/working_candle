@@ -20,6 +20,7 @@ public class GlobalHotkeyService : IDisposable
     private const int WM_SYSKEYDOWN = 0x0104;
     private const int WM_KEYUP = 0x0101;
     private const int WM_SYSKEYUP = 0x0105;
+    private const int LONG_PRESS_THRESHOLD_MS = 1000;
 
     /// <summary>
     /// Virtual key code for the Right Ctrl key.
@@ -53,13 +54,21 @@ public class GlobalHotkeyService : IDisposable
     // Keep a reference to the delegate for the lifetime of the hook so it isn't
     // garbage-collected while native code still holds a pointer to it.
     private readonly LowLevelKeyboardProc _hookProc;
+    private readonly object _keyStateLock = new();
     private IntPtr _hookHandle = IntPtr.Zero;
     private bool _isRightCtrlDown;
+    private bool _longPressTriggered;
+    private System.Threading.Timer? _longPressTimer;
 
     /// <summary>
-    /// Event raised when the Right Ctrl key is pressed (key-down transition).
+    /// Event raised when the Right Ctrl key is released after a short press.
     /// </summary>
     public event EventHandler? PauseResumeHotkeyPressed;
+
+    /// <summary>
+    /// Event raised when the Right Ctrl key is held for at least one second.
+    /// </summary>
+    public event EventHandler? StopHotkeyPressed;
 
     public GlobalHotkeyService()
     {
@@ -93,8 +102,8 @@ public class GlobalHotkeyService : IDisposable
     }
 
     /// <summary>
-    /// Low-level keyboard hook callback. Detects the key-down transition of Right Ctrl
-    /// (ignoring auto-repeat while the key is held) and raises <see cref="PauseResumeHotkeyPressed"/>.
+    /// Low-level keyboard hook callback. Detects Right Ctrl presses while ignoring
+    /// auto-repeat and distinguishes short presses from long presses.
     /// </summary>
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
@@ -107,15 +116,35 @@ public class GlobalHotkeyService : IDisposable
             {
                 if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
                 {
-                    if (!_isRightCtrlDown)
+                    lock (_keyStateLock)
                     {
-                        _isRightCtrlDown = true;
-                        PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                        if (!_isRightCtrlDown)
+                        {
+                            _isRightCtrlDown = true;
+                            _longPressTriggered = false;
+                            _longPressTimer = new System.Threading.Timer(
+                                OnLongPressTimerElapsed,
+                                null,
+                                LONG_PRESS_THRESHOLD_MS,
+                                Timeout.Infinite);
+                        }
                     }
                 }
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
                 {
-                    _isRightCtrlDown = false;
+                    bool isShortPress;
+                    lock (_keyStateLock)
+                    {
+                        isShortPress = _isRightCtrlDown && !_longPressTriggered;
+                        _isRightCtrlDown = false;
+                        _longPressTimer?.Dispose();
+                        _longPressTimer = null;
+                    }
+
+                    if (isShortPress)
+                    {
+                        PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
                 }
             }
         }
@@ -123,11 +152,33 @@ public class GlobalHotkeyService : IDisposable
         return CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
     }
 
+    private void OnLongPressTimerElapsed(object? state)
+    {
+        lock (_keyStateLock)
+        {
+            if (!_isRightCtrlDown || _longPressTriggered)
+            {
+                return;
+            }
+
+            _longPressTriggered = true;
+        }
+
+        StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>
     /// Uninstalls the keyboard hook and releases associated resources.
     /// </summary>
     public void Dispose()
     {
+        lock (_keyStateLock)
+        {
+            _isRightCtrlDown = false;
+            _longPressTimer?.Dispose();
+            _longPressTimer = null;
+        }
+
         if (_hookHandle != IntPtr.Zero)
         {
             if (!UnhookWindowsHookEx(_hookHandle))
