@@ -117,18 +117,21 @@ public class GlobalHotkeyService : IDisposable
             {
                 if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
                 {
+                    System.Threading.Timer? timerToDispose = null;
                     lock (_keyStateLock)
                     {
                         if (!_isRightCtrlDown)
                         {
                             _isRightCtrlDown = true;
                             _longPressTriggered = false;
+                            timerToDispose = _longPressTimer;
                             _longPressTimer = new System.Threading.Timer(
                                 OnLongPressTimerElapsed,
                                 null,
                                 LONG_PRESS_THRESHOLD_MS,
                                 Timeout.Infinite);
                         }
+                        timerToDispose?.Dispose();
                     }
                 }
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
