@@ -155,14 +155,15 @@ public class GlobalHotkeyService : IDisposable
 
     private void OnLongPressTimerElapsed(object? state)
     {
+        bool raiseStopEvent;
         lock (_keyStateLock)
         {
-            if (_isDisposed || !_isRightCtrlDown || _longPressTriggered)
-            {
-                return;
-            }
+            raiseStopEvent = !_isDisposed && _isRightCtrlDown && !_longPressTriggered;
+            _longPressTriggered = raiseStopEvent;
+        }
 
-            _longPressTriggered = true;
+        if (raiseStopEvent)
+        {
             StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
         }
     }
