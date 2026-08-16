@@ -17,7 +17,7 @@ A minimalist Windows desktop application designed to help users focus on work th
 - **Simple 1-hour focus timer** - Start with one click
 - **Clean, distraction-free interface** - Minimal UI that stays out of your way
 - **Pause/resume functionality** - Take breaks without losing progress
-- **Global hotkey (Right Ctrl)** - Pause/resume the timer even when the app isn't focused
+- **Global hotkeys (Right Ctrl and Right Shift)** - Pause/resume or stop the timer even when the app isn't focused
 - **Audio notification on completion** - Pleasant sound when timer completes
 - **Native Windows application** - No installation required, runs standalone
 - **Lightweight** - Uses less than 50 MB of memory
@@ -55,6 +55,7 @@ The application is a single executable file with no external dependencies beyond
 - Click **"Resume"** to continue from where you left off
 - The timer accurately tracks elapsed time, accounting for pause duration
 - Press **Right Ctrl** anywhere on your system (no need to have the app focused) to toggle pause/resume while the timer is running or paused
+- Press **Right Shift** anywhere on your system (no need to have the app focused) to stop and reset the timer
 
 ### Stopping a Session
 

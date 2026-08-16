@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 namespace WorkingCandle;
 
 /// <summary>
-/// Detects presses of the Right Ctrl key system-wide using a low-level keyboard hook,
+/// Detects presses of the Right Ctrl and Right Shift keys system-wide using a low-level keyboard hook,
 /// so that the application can react to the key being pressed regardless of whether
 /// the application window is focused.
 /// </summary>
 /// <remarks>
 /// A low-level keyboard hook is used instead of the Win32 RegisterHotKey API because
-/// RegisterHotKey does not reliably trigger for a modifier key (like Right Ctrl) used
+/// RegisterHotKey does not reliably trigger for modifier keys (like Right Ctrl) used
 /// on its own, since modifier key presses are handled earlier in the input pipeline
 /// and typically never reach the hotkey dispatch mechanism.
 /// </remarks>
@@ -25,6 +25,10 @@ public class GlobalHotkeyService : IDisposable
     /// Virtual key code for the Right Ctrl key.
     /// </summary>
     private const int VK_RCONTROL = 0xA3;
+    /// <summary>
+    /// Virtual key code for the Right Shift key.
+    /// </summary>
+    private const int VK_RSHIFT = 0xA1;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT
@@ -53,13 +57,20 @@ public class GlobalHotkeyService : IDisposable
     // Keep a reference to the delegate for the lifetime of the hook so it isn't
     // garbage-collected while native code still holds a pointer to it.
     private readonly LowLevelKeyboardProc _hookProc;
+    private readonly object _keyStateLock = new();
     private IntPtr _hookHandle = IntPtr.Zero;
     private bool _isRightCtrlDown;
+    private bool _isRightShiftDown;
 
     /// <summary>
-    /// Event raised when the Right Ctrl key is pressed (key-down transition).
+    /// Event raised when the Right Ctrl key is released.
     /// </summary>
     public event EventHandler? PauseResumeHotkeyPressed;
+
+    /// <summary>
+    /// Event raised when the Right Shift key is pressed.
+    /// </summary>
+    public event EventHandler? StopHotkeyPressed;
 
     public GlobalHotkeyService()
     {
@@ -69,7 +80,7 @@ public class GlobalHotkeyService : IDisposable
     }
 
     /// <summary>
-    /// Installs the low-level keyboard hook used to detect Right Ctrl presses system-wide.
+    /// Installs the low-level keyboard hook used to detect Right Ctrl and Right Shift presses system-wide.
     /// </summary>
     public void Register()
     {
@@ -88,13 +99,13 @@ public class GlobalHotkeyService : IDisposable
 
         if (_hookHandle == IntPtr.Zero)
         {
-            System.Diagnostics.Debug.WriteLine("Warning: Failed to install global keyboard hook for the Right Ctrl hotkey.");
+            System.Diagnostics.Debug.WriteLine("Warning: Failed to install global keyboard hook for the Right Ctrl and Right Shift hotkeys.");
         }
     }
 
     /// <summary>
-    /// Low-level keyboard hook callback. Detects the key-down transition of Right Ctrl
-    /// (ignoring auto-repeat while the key is held) and raises <see cref="PauseResumeHotkeyPressed"/>.
+    /// Low-level keyboard hook callback. Detects Right Ctrl and Right Shift presses
+    /// while ignoring auto-repeat.
     /// </summary>
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
@@ -107,15 +118,51 @@ public class GlobalHotkeyService : IDisposable
             {
                 if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
                 {
-                    if (!_isRightCtrlDown)
+                    lock (_keyStateLock)
                     {
-                        _isRightCtrlDown = true;
-                        PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                        if (!_isRightCtrlDown)
+                        {
+                            _isRightCtrlDown = true;
+                        }
                     }
                 }
                 else if (message is WM_KEYUP or WM_SYSKEYUP)
                 {
-                    _isRightCtrlDown = false;
+                    bool wasDown;
+                    lock (_keyStateLock)
+                    {
+                        wasDown = _isRightCtrlDown;
+                        _isRightCtrlDown = false;
+                    }
+
+                    if (wasDown)
+                    {
+                        PauseResumeHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+            }
+            else if (hookStruct.vkCode == VK_RSHIFT)
+            {
+                if (message is WM_KEYDOWN or WM_SYSKEYDOWN)
+                {
+                    bool isFirstPress;
+                    lock (_keyStateLock)
+                    {
+                        isFirstPress = !_isRightShiftDown;
+                        _isRightShiftDown = true;
+                    }
+
+                    if (isFirstPress)
+                    {
+                        StopHotkeyPressed?.Invoke(this, EventArgs.Empty);
+                    }
+                }
+                else if (message is WM_KEYUP or WM_SYSKEYUP)
+                {
+                    lock (_keyStateLock)
+                    {
+                        _isRightShiftDown = false;
+                    }
                 }
             }
         }
@@ -128,11 +175,17 @@ public class GlobalHotkeyService : IDisposable
     /// </summary>
     public void Dispose()
     {
+        lock (_keyStateLock)
+        {
+            _isRightCtrlDown = false;
+            _isRightShiftDown = false;
+        }
+
         if (_hookHandle != IntPtr.Zero)
         {
             if (!UnhookWindowsHookEx(_hookHandle))
             {
-                System.Diagnostics.Debug.WriteLine("Warning: Failed to uninstall global keyboard hook for the Right Ctrl hotkey.");
+                System.Diagnostics.Debug.WriteLine("Warning: Failed to uninstall global keyboard hook for the Right Ctrl and Right Shift hotkeys.");
             }
             _hookHandle = IntPtr.Zero;
         }

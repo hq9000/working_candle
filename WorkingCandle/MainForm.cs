@@ -39,8 +39,9 @@ public partial class MainForm : Form
         // Subscribe to state change events
         _stateManager.StateChanged += OnStateChanged;
 
-        // Subscribe to global hotkey events (Right Ctrl toggles pause/resume)
+        // Subscribe to global hotkey events (Right Ctrl pauses/resumes, Right Shift stops)
         _globalHotkeyService.PauseResumeHotkeyPressed += GlobalHotkeyService_PauseResumeHotkeyPressed;
+        _globalHotkeyService.StopHotkeyPressed += GlobalHotkeyService_StopHotkeyPressed;
         _globalHotkeyService.Register();
 
         // Subscribe to timer events
@@ -61,6 +62,12 @@ public partial class MainForm : Form
     /// </summary>
     private void GlobalHotkeyService_PauseResumeHotkeyPressed(object? sender, EventArgs e)
     {
+        if (InvokeRequired)
+        {
+            BeginInvoke(GlobalHotkeyService_PauseResumeHotkeyPressed, sender, e);
+            return;
+        }
+
         switch (_stateManager.CurrentState)
         {
             case StateManager.State.Running:
@@ -70,6 +77,20 @@ public partial class MainForm : Form
                 ResumeTimer();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Handles the global stop hotkey (Right Shift) press.
+    /// </summary>
+    private void GlobalHotkeyService_StopHotkeyPressed(object? sender, EventArgs e)
+    {
+        if (InvokeRequired)
+        {
+            BeginInvoke(GlobalHotkeyService_StopHotkeyPressed, sender, e);
+            return;
+        }
+
+        StopTimer();
     }
 
     private void OnStateChanged(object? sender, StateManager.State newState)
@@ -293,6 +314,11 @@ public partial class MainForm : Form
     /// Handles the Stop button click event.
     /// </summary>
     private void StopButton_Click(object? sender, EventArgs e)
+    {
+        StopTimer();
+    }
+
+    private void StopTimer()
     {
         if (_stateManager.CanTransitionTo(StateManager.State.Stopped))
         {
